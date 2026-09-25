@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Cuenta corriente{% endblock %}
+{% block contenido %}
+<h1>Cuenta corriente</h1>
+<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
+<p class="subtitulo">Saldo de cada cliente (lo que te debe).</p>
+
+<div class="tarjeta metrica ladrillo">
+  <div class="etiqueta">Deuda total actual</div>
+  <div class="valor cifra">${{ "%.2f"|format(deuda_total) }}</div>
+</div>
+
+<div class="tarjeta">
+  {% if clientes %}
+    {% for c in clientes %}
+      <a class="renglon" href="{{ url_for('cuenta_corriente_detalle', cliente_id=c.id) }}">
+        <div class="principal">{{ c.nombre }}</div>
+        {% if c.saldo > 0 %}
+          <div class="monto cifra ladrillo">${{ "%.2f"|format(c.saldo) }}</div>
+        {% elif c.saldo < 0 %}
+          <div class="monto cifra verde">A favor ${{ "%.2f"|format(-c.saldo) }}</div>
+        {% else %}
+          <span class="etiqueta-pill">Al día</span>
+        {% endif %}
+      </a>
+    {% endfor %}
+  {% else %}
+    <p class="vacio">No hay clientes cargados todavía.</p>
+  {% endif %}
+</div>
+{% endblock %}

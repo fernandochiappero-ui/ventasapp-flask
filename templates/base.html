@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+{# base.html
+   Esta es la plantilla "molde". El resto de las páginas hacen
+   {% extends "base.html" %} y solo completan el bloque "contenido".
+   Así evitamos repetir el <head>, el menú y el pie en cada página. #}
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  {# viewport con esta configuración es lo que hace que la página se vea
+     bien en un celular (y no como una web de escritorio achicada) #}
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Libro de Ventas{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='6') }}">
+  <script src="{{ url_for('static', filename='js/app.js', v='11') }}" defer></script>
+</head>
+<body>
+  <div class="app">
+    {% if current_user.is_authenticated %}
+    <nav class="tabs">
+      {% if current_user.es_administrador %}
+      <a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">
+        <span class="icono">🏠</span>Inicio
+      </a>
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['listar_clientes','nuevo_cliente','editar_cliente','cuenta_corriente_index','cuenta_corriente_detalle'] }}">
+        <a href="{{ url_for('listar_clientes') }}" class="menu-boton" aria-haspopup="true" aria-expanded="false">
+          <span class="icono">👥</span>Clientes
+        </a>
+        <div class="submenu">
+          <a href="{{ url_for('listar_clientes') }}">Administrar clientes</a>
+          <a href="{{ url_for('cuenta_corriente_index') }}">Cuentas corrientes de clientes</a>
+          <a href="{{ url_for('cuenta_corriente_index') }}">Resumen de cuentas corrientes</a>
+        </div>
+      </div>
+      <a href="{{ url_for('listar_ventas') }}" class="{{ 'activo' if request.endpoint in ['listar_ventas','nueva_venta'] }}">
+        <span class="icono">🧾</span>Ventas
+      </a>
+      <a href="{{ url_for('cuenta_corriente_index') }}" class="{{ 'activo' if request.endpoint in ['cuenta_corriente_index','cuenta_corriente_detalle'] }}">
+        <span class="icono">📒</span>Cta. Cte.
+      </a>
+      <a href="{{ url_for('registrar_pago_vendedor') }}" class="{{ 'activo' if request.endpoint == 'registrar_pago_vendedor' }}">
+        <span class="icono">💵</span>Registrar pagos
+      </a>
+      <a href="{{ url_for('lista_pagos_recibidos') }}" class="{{ 'activo' if request.endpoint == 'lista_pagos_recibidos' }}">
+        <span class="icono">🔔</span>Pagos recibidos
+      </a>
+      <a href="{{ url_for('reportes') }}" class="{{ 'activo' if request.endpoint == 'reportes' }}">
+        <span class="icono">📊</span>Reportes
+      </a>
+      <a href="{{ url_for('nuevo_usuario') }}" class="{{ 'activo' if request.endpoint == 'nuevo_usuario' }}">
+        <span class="icono">👤</span>Usuarios
+      </a>
+      {% else %}
+      <a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">
+        <span class="icono">🏠</span>Inicio
+      </a>
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nueva_venta','nuevo_cliente','registrar_pago_vendedor'] }}">
+        <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
+          <span class="icono">📁</span>Archivos
+        </a>
+        <div class="submenu">
+          <a href="{{ url_for('nueva_venta') }}">🧾 Cargar venta</a>
+          <a href="{{ url_for('nuevo_cliente', volver='ventas') }}">👤 Agregar cliente</a>
+          <a href="{{ url_for('registrar_pago_vendedor') }}">💵 Registrar pago</a>
+        </div>
+      </div>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+    <div class="contenido-principal">
+      {% if current_user.is_authenticated %}
+      <header class="topbar">
+        <div class="marca">Libro de <span>Ventas</span></div>
+        <span>
+          {% if current_user.es_administrador %}
+          <a class="salir" href="{{ url_for('configurar_cuenta') }}">{{ current_user.username }}</a>
+          {% else %}
+          <span class="salir">{{ current_user.username }}</span>
+          {% endif %}
+          <a class="boton cerrar-sesion" href="{{ url_for('logout') }}">Cerrar sesión</a>
+        </span>
+      </header>
+      {% endif %}
+
+      <main>
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+          {% for categoria, texto in mensajes %}
+            <div class="mensaje {{ categoria }}">{{ texto }}</div>
+          {% endfor %}
+        {% endwith %}
+
+        {% block contenido %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  {% if current_user.is_authenticated and current_user.es_administrador %}
+  <div id="aviso-pago" class="aviso-pago" role="status" hidden></div>
+  {% endif %}
+
+  <div id="confirmacion-modal" class="modal-confirmacion" hidden>
+    <div class="modal-contenido" role="dialog" aria-modal="true"
+         aria-labelledby="confirmacion-titulo">
+      <h2 id="confirmacion-titulo">¿Eliminar cliente?</h2>
+      <p id="confirmacion-mensaje"></p>
+      <div class="modal-acciones">
+        <button type="button" id="confirmacion-cancelar" class="boton secundario">
+          Cancelar
+        </button>
+        <button type="button" id="confirmacion-aceptar" class="boton peligro">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

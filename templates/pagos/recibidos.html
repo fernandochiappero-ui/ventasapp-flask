@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titulo %}Pagos recibidos{% endblock %}
+{% block contenido %}
+<h1>Pagos recibidos</h1>
+<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
+<a href="{{ url_for('registrar_pago_vendedor') }}" class="boton verde boton-volver">Registrar pago</a>
+
+<div class="tarjeta">
+  <h2>Historial archivado de pagos</h2>
+  {% if pagos %}
+    <div class="tabla-deudores">
+      <table class="reporte">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Detalle</th>
+            <th class="num">Monto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pago in pagos %}
+          <tr>
+            <td>{{ pago.cliente.nombre }}</td>
+            <td>{{ pago.fecha.strftime('%d/%m/%Y') }}</td>
+            <td>{{ pago.creado.strftime('%H:%M:%S') }}</td>
+            <td>{{ pago.descripcion or 'Pago / abono' }}</td>
+            <td class="num cifra verde">${{ "%.2f"|format(pago.monto) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="vacio">Todavía no hay pagos archivados.</p>
+  {% endif %}
+</div>
+{% endblock %}

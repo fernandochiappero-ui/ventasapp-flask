@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titulo %}Ventas{% endblock %}
+{% block contenido %}
+<section class="ventana-ventas">
+  <div class="ventana-titulo">
+    <span class="ventana-icono">▣</span>
+    <strong>Ventas</strong>
+    <span class="ventana-controles">_ □ ×</span>
+  </div>
+
+  <div class="barra-acciones-ventas">
+    <a href="{{ url_for('dashboard') }}" class="boton secundario">← Inicio</a>
+    <a href="{{ url_for('nueva_venta') }}" class="boton verde">✚ Nueva venta</a>
+    <a href="{{ url_for('reportes', desde=fecha_filtro.isoformat(), hasta=fecha_filtro.isoformat()) }}"
+       class="boton secundario">▤ Ver detalle</a>
+    <form method="GET" class="filtro-ventas">
+      <label for="fecha">Fecha</label>
+      <input type="date" id="fecha" name="fecha" value="{{ fecha_filtro.isoformat() }}">
+      <button type="submit" class="boton secundario">↻ Actualizar</button>
+    </form>
+    <button type="button" class="boton secundario" onclick="window.print()">▣ Imprimir</button>
+  </div>
+
+  <div class="tabla-ventas-ventana">
+    <table class="reporte">
+      <thead>
+        <tr>
+          <th>Fecha / hora</th>
+          <th>Cliente</th>
+          <th>Descripción</th>
+          <th>Forma de pago</th>
+          <th class="num">Monto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for venta in ventas %}
+        <tr>
+          <td>{{ venta.fecha.strftime('%d/%m/%Y') }}<br><small>{{ venta.creado.strftime('%H:%M') }}</small></td>
+          <td>{{ venta.cliente.nombre }}</td>
+          <td>{{ venta.descripcion or 'Sin descripción' }}</td>
+          <td>{{ 'Efectivo' if venta.forma_pago == 'efectivo' else 'Cta. Cte.' }}</td>
+          <td class="num cifra">${{ "%.2f"|format(venta.monto) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="vacio">No hay ventas para esta fecha.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="totales-ventas-ventana">
+    <div><span>Subtotal</span><strong class="cifra">${{ "%.2f"|format(total) }}</strong></div>
+    <div><span>Ventas registradas</span><strong>{{ ventas|length }}</strong></div>
+    <div class="total-destacado"><span>Total</span><strong class="cifra">${{ "%.2f"|format(total) }}</strong></div>
+  </div>
+</section>
+{% endblock %}

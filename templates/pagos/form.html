@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}Registrar pago{% endblock %}
+{% block contenido %}
+<h1>Registrar pago</h1>
+<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
+<a href="{{ url_for('listar_deudores') }}" class="boton secundario boton-volver">Ver todos los deudores</a>
+
+{% if not clientes %}
+<div class="mensaje informativo">
+  No hay clientes con deudas pendientes.
+</div>
+{% else %}
+<form method="POST" class="tarjeta">
+  <label for="buscar-cliente-pago">Cliente con deuda *</label>
+  <div class="buscador-autocompletar">
+    <input type="hidden" id="cliente_id_pago" name="cliente_id" required>
+    <input type="text" id="buscar-cliente-pago" placeholder="Buscar cliente..."
+           autocomplete="off" required>
+    <div id="saldo-cliente-pago" class="saldo-cliente-seleccionado" hidden></div>
+    <div id="detalle-cliente-pago" class="detalle-cliente-pago" hidden></div>
+    <div id="clientes-sugerencias-pago" class="clientes-sugerencias" hidden>
+      {% for cliente in clientes %}
+        <button type="button" class="sugerencia-cliente"
+                data-id="{{ cliente.id }}" data-nombre="{{ cliente.nombre }}"
+                data-saldo="{{ '%.2f'|format(cliente.saldo) }}"
+                data-movimientos='{{ movimientos_por_cliente[cliente.id]|tojson }}'>
+          {{ cliente.nombre }} · deuda ${{ "%.2f"|format(cliente.saldo) }}
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <label for="monto-pago">Monto del pago *</label>
+  <input type="number" id="monto-pago" name="monto" step="0.01" min="0.01"
+         required inputmode="decimal">
+
+  <label for="descripcion-pago">Descripción</label>
+  <input type="text" id="descripcion-pago" name="descripcion"
+         placeholder="Ej: Pago parcial">
+
+  <label for="fecha-pago">Fecha</label>
+  <input type="date" id="fecha-pago" value="{{ fecha_inicial.isoformat() }}" disabled>
+  <small class="ayuda-formulario">El pago se registra con la fecha de hoy.</small>
+
+  <button type="submit" class="ancho verde">Registrar pago</button>
+</form>
+{% endif %}
+{% endblock %}
