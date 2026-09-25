@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}Nuevo usuario{% endblock %}
+{% block contenido %}
+<h1>Nuevo usuario</h1>
+<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
+
+<form method="POST" class="tarjeta">
+  <label for="username">Nombre de usuario *</label>
+  <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+
+  <label for="password">Contraseña *</label>
+  <input type="password" id="password" name="password" autocomplete="new-password" required>
+
+  <label for="rol">Rol *</label>
+  <select id="rol" name="rol" required>
+    <option value="vendedor">Vendedor: ventas y alta de clientes</option>
+    <option value="administrador">Administrador: acceso completo</option>
+  </select>
+
+  <button type="submit" class="ancho verde">Crear usuario</button>
+</form>
+{% endblock %}

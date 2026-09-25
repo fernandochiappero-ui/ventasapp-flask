@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titulo %}Clientes{% endblock %}
+{% block contenido %}
+<h1>Clientes</h1>
+
+<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
+
+<form method="GET" class="buscador">
+  <div class="buscador-fila">
+    <div class="buscador-autocompletar">
+      <input type="text" name="q" id="buscar-cliente" placeholder="Buscar por nombre..."
+             value="{{ busqueda }}" autocomplete="off" autofocus>
+      <div id="clientes-sugerencias" class="clientes-sugerencias" hidden>
+        {% for cliente_opcion in clientes_opciones %}
+          <button type="button" class="sugerencia-cliente"
+                  data-nombre="{{ cliente_opcion.nombre }}">
+            {{ cliente_opcion.nombre }}
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+    <button type="submit" class="verde">Buscar</button>
+  </div>
+</form>
+
+<div class="acciones-clientes">
+  <a href="{{ url_for('nuevo_cliente') }}" class="boton verde">+ Agregar cliente</a>
+</div>
+
+<div class="tarjeta">
+  {% if not busqueda %}
+    <p class="vacio">Escribí un nombre y presioná Buscar para ver clientes.</p>
+  {% elif clientes %}
+    {% for c in clientes %}
+      <div class="renglon cliente-renglon">
+        <div>
+          <div class="principal">{{ c.nombre }}</div>
+          <div class="secundario">{{ c.telefono or 'Sin teléfono' }}</div>
+        </div>
+        {% if c.saldo > 0 %}
+          <div class="monto cifra ladrillo">${{ "%.2f"|format(c.saldo) }}</div>
+        {% else %}
+          <span class="etiqueta-pill">Al día</span>
+        {% endif %}
+        <div class="acciones-renglon">
+          <a href="{{ url_for('editar_cliente', cliente_id=c.id) }}" class="boton secundario">Editar</a>
+              <form method="POST" action="{{ url_for('eliminar_cliente', cliente_id=c.id) }}"
+                data-confirmar-eliminacion data-cliente="{{ c.nombre }}">
+            <button type="submit" class="boton secundario">Eliminar</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="vacio">No se encontraron clientes con ese nombre.</p>
+  {% endif %}
+</div>
+{% endblock %}

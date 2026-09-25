@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}Mi cuenta{% endblock %}
+{% block contenido %}
+<h1>Mi cuenta</h1>
+<p class="subtitulo">Modificá tu nombre de usuario o contraseña.</p>
+
+<form method="POST" class="tarjeta">
+  <label for="username">Nombre de usuario</label>
+  <input type="text" id="username" name="username" value="{{ current_user.username }}"
+         autocomplete="username" required autofocus>
+
+  <h2 style="margin-top: 22px;">Cambiar contraseña</h2>
+  <p class="subtitulo">Dejá estos campos vacíos si solo querés cambiar el usuario.</p>
+
+  <label for="password_actual">Contraseña actual</label>
+  <input type="password" id="password_actual" name="password_actual"
+         autocomplete="current-password">
+
+  <label for="password_nueva">Nueva contraseña</label>
+  <input type="password" id="password_nueva" name="password_nueva"
+         autocomplete="new-password">
+
+  <label for="password_confirmacion">Repetir nueva contraseña</label>
+  <input type="password" id="password_confirmacion" name="password_confirmacion"
+         autocomplete="new-password">
+
+  <button type="submit" class="ancho verde">Guardar cambios</button>
+</form>
+{% endblock %}

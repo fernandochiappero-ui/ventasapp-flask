@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar cliente' if cliente else 'Nuevo cliente' }}{% endblock %}
+{% block contenido %}
+{% set datos = form_data|default({}) %}
+<h1>{{ 'Editar cliente' if cliente else 'Nuevo cliente' }}</h1>
+
+<a href="{{ url_for('dashboard') }}"
+       class="boton secundario boton-volver">← Inicio</a>
+
+<form method="POST" class="tarjeta">
+       {% if volver %}
+       <input type="hidden" name="volver" value="ventas">
+       {% endif %}
+
+  <label for="nombre">Nombre *</label>
+  <input type="text" id="nombre" name="nombre" required autofocus
+                             value="{{ cliente.nombre if cliente else datos.get('nombre', '') }}">
+
+  <label for="telefono">Teléfono</label>
+  <input type="tel" id="telefono" name="telefono"
+                             value="{{ cliente.telefono if cliente else datos.get('telefono', '') }}">
+
+  <label for="direccion">Dirección</label>
+  <input type="text" id="direccion" name="direccion"
+                             value="{{ cliente.direccion if cliente else datos.get('direccion', '') }}">
+
+  <label for="notas">Notas</label>
+       <textarea id="notas" name="notas">{{ cliente.notas if cliente else datos.get('notas', '') }}</textarea>
+
+       {% if duplicados %}
+       <div class="aviso-duplicado">
+              <strong>Ya existe un cliente con ese nombre.</strong>
+              <p>¿Es el mismo cliente? Revisá estos datos antes de continuar:</p>
+              {% for existente in duplicados %}
+                     <div class="detalle-duplicado">
+                            <strong>{{ existente.nombre }}</strong>
+                            <span>Teléfono: {{ existente.telefono or 'Sin teléfono' }}</span>
+                            <span>Dirección: {{ existente.direccion or 'Sin dirección' }}</span>
+                            <span>Notas: {{ existente.notas or 'Sin notas' }}</span>
+                            <span>Saldo pendiente: ${{ "%.2f"|format(existente.saldo) }}</span>
+                            <span>Estado: {{ 'Activo' if existente.activo else 'Inactivo' }}</span>
+                     </div>
+              {% endfor %}
+              <label class="confirmar-otro">
+                     <input type="checkbox" name="es_otro" value="si"
+                                           {{ 'checked' if request.form.get('es_otro') == 'si' }}>
+                     No es el mismo: quiero agregarlo como otro cliente.
+              </label>
+              <p class="ayuda-formulario">
+                     Para diferenciarlo, completá al menos teléfono, dirección o notas.
+              </p>
+       </div>
+       {% endif %}
+
+  <button type="submit" class="ancho verde">Guardar</button>
+</form>
+
+{% if cliente %}
+<form method="POST" action="{{ url_for('eliminar_cliente', cliente_id=cliente.id) }}"
+       data-confirmar-eliminacion data-cliente="{{ cliente.nombre }}">
+       <button type="submit" class="ancho secundario" style="margin-top:10px;">Eliminar cliente</button>
+</form>
+
+<a href="{{ url_for('cuenta_corriente_detalle', cliente_id=cliente.id) }}"
+   class="boton secundario ancho" style="margin-top:10px; box-sizing:border-box;">Ver cuenta corriente</a>
+{% endif %}
+{% endblock %}

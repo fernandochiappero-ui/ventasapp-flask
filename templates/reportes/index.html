@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block titulo %}Reportes{% endblock %}
+{% block contenido %}
+<h1>Reportes</h1>
+
+<form method="GET" class="rango-fechas">
+  <div>
+    <label for="desde">Desde</label>
+    <input type="date" id="desde" name="desde" value="{{ desde.isoformat() }}">
+  </div>
+  <div>
+    <label for="hasta">Hasta</label>
+    <input type="date" id="hasta" name="hasta" value="{{ hasta.isoformat() }}">
+  </div>
+  <button type="submit" class="verde" style="height:44px;">Filtrar</button>
+</form>
+
+<div class="grilla-resumen">
+  <div class="tarjeta metrica">
+    <div class="etiqueta">Total vendido</div>
+    <div class="valor cifra">${{ "%.2f"|format(total_ventas) }}</div>
+  </div>
+  <div class="tarjeta metrica verde">
+    <div class="etiqueta">Efectivo</div>
+    <div class="valor cifra">${{ "%.2f"|format(total_efectivo) }}</div>
+  </div>
+  <div class="tarjeta metrica ladrillo">
+    <div class="etiqueta">A cuenta corriente</div>
+    <div class="valor cifra">${{ "%.2f"|format(total_cuenta) }}</div>
+  </div>
+  <div class="tarjeta metrica">
+    <div class="etiqueta">Deuda total (a hoy)</div>
+    <div class="valor cifra ladrillo">${{ "%.2f"|format(deuda_total_actual) }}</div>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <h2>Ventas por día</h2>
+  {% if resumen_diario %}
+    <table class="reporte">
+      <thead>
+        <tr><th>Fecha</th><th class="num">Cant.</th><th class="num">Total</th></tr>
+      </thead>
+      <tbody>
+        {% for d in resumen_diario %}
+        <tr>
+          <td>{{ d.fecha.strftime('%d/%m/%Y') }}</td>
+          <td class="num">{{ d.cantidad }}</td>
+          <td class="num cifra">${{ "%.2f"|format(d.total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="vacio">No hubo ventas en este rango.</p>
+  {% endif %}
+</div>
+
+<div class="tarjeta">
+  <h2>Detalle de ventas</h2>
+  {% if ventas %}
+    <table class="reporte">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Descripción</th>
+          <th>Forma de pago</th>
+          <th class="num">Monto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for venta in ventas %}
+        <tr>
+          <td>{{ venta.fecha.strftime('%d/%m/%Y') }}</td>
+          <td>{{ venta.cliente.nombre }}</td>
+          <td>{{ venta.descripcion or 'Sin descripción' }}</td>
+          <td>{{ 'Efectivo' if venta.forma_pago == 'efectivo' else 'Cta. Cte.' }}</td>
+          <td class="num cifra">${{ "%.2f"|format(venta.monto) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="vacio">No hay ventas para este rango.</p>
+  {% endif %}
+</div>
+
+<div class="tarjeta">
+  <h2>
+    Movimientos de cuenta corriente
+    {% if desde == hasta %}
+      del {{ desde.strftime('%d/%m/%Y') }}
+    {% else %}
+      del {{ desde.strftime('%d/%m/%Y') }} al {{ hasta.strftime('%d/%m/%Y') }}
+    {% endif %}
+  </h2>
+  <div class="renglon">
+    <div class="principal">Cargos (ventas a cuenta)</div>
+    <div class="monto cifra ladrillo">${{ "%.2f"|format(cargos) }}</div>
+  </div>
+  <div class="renglon">
+    <div class="principal">Pagos recibidos</div>
+    <div class="monto cifra verde">${{ "%.2f"|format(pagos) }}</div>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <h2>Clientes con deuda (a hoy)</h2>
+  {% if deudores %}
+    {% for c in deudores %}
+      <a class="renglon" href="{{ url_for('cuenta_corriente_detalle', cliente_id=c.id) }}">
+        <div class="principal">{{ c.nombre }}</div>
+        <div class="monto cifra ladrillo">${{ "%.2f"|format(c.saldo) }}</div>
+      </a>
+    {% endfor %}
+  {% else %}
+    <p class="vacio">Ningún cliente tiene deuda pendiente.</p>
+  {% endif %}
+</div>
+{% endblock %}

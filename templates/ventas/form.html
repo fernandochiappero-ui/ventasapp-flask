@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva venta{% endblock %}
+{% block contenido %}
+<h1>Cargar venta</h1>
+
+<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
+
+<form method="POST" class="tarjeta">
+  <label for="cliente_id">Cliente *</label>
+  <div class="buscador-autocompletar">
+    <input type="hidden" id="cliente_id" name="cliente_id" required>
+    <input type="text" id="buscar-cliente-venta" placeholder="Buscar cliente..."
+          value="{{ cliente_seleccionado.nombre if cliente_seleccionado else '' }}"
+          autocomplete="off" required>
+    <div id="clientes-sugerencias-venta" class="clientes-sugerencias" hidden>
+      <button type="button" class="crear-cliente-sugerencia"
+        data-url="{{ url_for('nuevo_cliente', volver='ventas') }}">
+        + Crear cliente nuevo
+      </button>
+      {% for c in clientes %}
+        <button type="button" class="sugerencia-cliente"
+                data-id="{{ c.id }}" data-nombre="{{ c.nombre }}">
+          {{ c.nombre }}
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <label for="monto">Monto *</label>
+  <input type="number" id="monto" name="monto" step="0.01" min="0.01" required inputmode="decimal">
+
+  <label for="descripcion">Descripción</label>
+  <input type="text" id="descripcion" name="descripcion" placeholder="Ej: 2kg de harina, reparación, etc.">
+
+  <label>Forma de pago *</label>
+  <div class="opciones-radio">
+    <label class="opcion">
+      <input type="radio" name="forma_pago" value="efectivo" checked onchange="marcar(this)">
+      <span>💵 Efectivo</span>
+    </label>
+    <label class="opcion">
+      <input type="radio" name="forma_pago" value="cuenta_corriente" onchange="marcar(this)">
+      <span>📒 Cta. corriente</span>
+    </label>
+  </div>
+
+  <label for="fecha">Fecha</label>
+  {% if current_user.es_vendedor %}
+    <input type="date" id="fecha" name="fecha"
+           value="{{ fecha_inicial.isoformat() if fecha_inicial else '' }}" disabled>
+    <small class="ayuda-formulario">El vendedor registra únicamente ventas del día actual.</small>
+  {% else %}
+    <input type="date" id="fecha" name="fecha"
+           value="{{ fecha_inicial.isoformat() if fecha_inicial else '' }}">
+  {% endif %}
+
+  <button type="submit" class="ancho verde">Registrar venta</button>
+</form>
+
+<script>
+  {% if cliente_seleccionado %}
+  document.getElementById('cliente_id').value = '{{ cliente_seleccionado.id }}';
+  {% endif %}
+</script>
+{% endblock %}

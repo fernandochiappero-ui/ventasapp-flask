@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titulo %}Cuenta de {{ cliente.nombre }}{% endblock %}
+{% block contenido %}
+<h1>{{ cliente.nombre }}</h1>
+<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
+
+<div class="tarjeta metrica {{ 'ladrillo' if cliente.saldo > 0 else 'verde' }}">
+  <div class="etiqueta">Saldo actual</div>
+  <div class="valor cifra">${{ "%.2f"|format(cliente.saldo) }}</div>
+</div>
+
+<div class="tarjeta">
+  <h2>Registrar pago / abono</h2>
+  <form method="POST" action="{{ url_for('registrar_pago', cliente_id=cliente.id) }}">
+    <label for="monto">Monto *</label>
+    <input type="number" id="monto" name="monto" step="0.01" min="0.01" required inputmode="decimal">
+
+    <label for="descripcion">Descripción</label>
+    <input type="text" id="descripcion" name="descripcion" placeholder="Ej: Pago parcial en efectivo">
+
+    <label for="fecha">Fecha</label>
+    <input type="date" id="fecha" name="fecha">
+
+    <button type="submit" class="ancho verde">Registrar pago</button>
+  </form>
+</div>
+
+<div class="tarjeta">
+  <h2>Historial de movimientos</h2>
+  {% if filas %}
+    {% for f in filas %}
+      <div class="renglon">
+        <div>
+          <div class="principal">
+            {{ 'Venta' if f.mov.tipo == 'venta' else 'Pago' }} · {{ f.mov.fecha.strftime('%d/%m/%Y') }}
+          </div>
+          <div class="secundario">{{ f.mov.descripcion or '' }}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="monto cifra {{ 'ladrillo' if f.mov.tipo == 'venta' else 'verde' }}">
+            {{ '+' if f.mov.tipo == 'venta' else '−' }}${{ "%.2f"|format(f.mov.monto) }}
+          </div>
+          <div class="secundario cifra">saldo: ${{ "%.2f"|format(f.saldo) }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="vacio">Este cliente todavía no tiene movimientos.</p>
+  {% endif %}
+</div>
+
+<script>
+  document.getElementById('fecha').valueAsDate = new Date();
+</script>
+{% endblock %}
