@@ -67,7 +67,7 @@ la base de datos) y Flask-Login (para el sistema de login).
 ```bash
 python init_db.py
 ```
-
+Tu Nombre <tu-email@ejemplo.com>
 Te va a pedir un nombre de usuario (podés dejar "admin" apretando Enter)
 y una contraseña. Con eso ya tenés todo listo. Esto crea un archivo
 `instance/base_datos.db` — ahí vive toda tu información (SQLite es una
