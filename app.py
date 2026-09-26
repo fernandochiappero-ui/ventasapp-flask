@@ -178,6 +178,26 @@ def create_app():
         logout_user()
         return redirect(url_for("login"))
 
+    @app.route("/setup-inicial")
+    def setup_inicial():
+        clave = request.args.get("clave")
+        if clave != os.environ.get("SETUP_SECRET", "cambiame123"):
+            return "No autorizado", 403
+
+        username = request.args.get("usuario")
+        password = request.args.get("password")
+        if not username or not password:
+            return "Faltan parámetros: ?usuario=X&password=Y&clave=Z", 400
+
+        usuario = Usuario.query.filter_by(username=username).first()
+        if usuario is None:
+            usuario = Usuario(username=username, rol="administrador")
+            db.session.add(usuario)
+        usuario.set_password(password)
+        db.session.commit()
+
+        return f"Usuario '{username}' creado/actualizado correctamente."
+
     # ------------------------------------------------------------------
     # DASHBOARD (resumen del día)
     # ------------------------------------------------------------------
