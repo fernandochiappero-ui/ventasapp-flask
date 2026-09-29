@@ -253,7 +253,14 @@ input:focus, select:focus, textarea:focus, a:focus, button:focus {
   cursor: pointer;
 }
 .opciones-radio input { display: none; }
-.opciones-radio input:checked + span { color: var(--verde); font-weight: 700; }
+.opciones-radio input:checked + span {
+  background-color: #2ecc71;
+  color: #000;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 8px 14px;
+  display: inline-block;
+}
 
 button, .boton {
   display: inline-block;
