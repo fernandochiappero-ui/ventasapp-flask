@@ -30,6 +30,7 @@
           <th>Descripción</th>
           <th>Forma de pago</th>
           <th class="num">Monto</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -40,9 +41,17 @@
           <td>{{ venta.descripcion or 'Sin descripción' }}</td>
           <td>{{ 'Efectivo' if venta.forma_pago == 'efectivo' else 'Cta. Cte.' }}</td>
           <td class="num cifra">${{ "%.2f"|format(venta.monto) }}</td>
+          <td class="acciones-venta">
+            <a href="{{ url_for('editar_venta', venta_id=venta.id) }}" class="boton secundario chico">✎ Editar</a>
+            <form method="POST" action="{{ url_for('eliminar_venta', venta_id=venta.id) }}"
+                  style="display:inline"
+                  onsubmit="return confirm('¿Seguro que querés eliminar esta venta? Esta acción no se puede deshacer.');">
+              <button type="submit" class="boton rojo chico">✕ Eliminar</button>
+            </form>
+          </td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="vacio">No hay ventas para esta fecha.</td></tr>
+        <tr><td colspan="6" class="vacio">No hay ventas para esta fecha.</td></tr>
         {% endfor %}
       </tbody>
     </table>
