@@ -491,6 +491,83 @@ def create_app():
             fecha_inicial=hoy_argentina(),
         )
 
+    @app.route("/ventas/<int:venta_id>/editar", methods=["GET", "POST"])
+    @administrador_requerido
+    def editar_venta(venta_id):
+        venta = db.get_or_404(Venta, venta_id)
+        clientes = Cliente.query.filter_by(activo=True).order_by(Cliente.nombre).all()
+
+        if request.method == "POST":
+            cliente_id = request.form.get("cliente_id", type=int)
+            monto = request.form.get("monto", type=float)
+            descripcion = request.form.get("descripcion", "").strip()
+            forma_pago = request.form.get("forma_pago", "efectivo")
+            fecha_str = request.form.get("fecha") or venta.fecha.isoformat()
+            fecha_venta = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+
+            errores = []
+            if not cliente_id:
+                errores.append("Elegí un cliente.")
+            if not monto or monto <= 0:
+                errores.append("El monto tiene que ser mayor a 0.")
+            if forma_pago not in ("efectivo", "cuenta_corriente"):
+                errores.append("Forma de pago inválida.")
+
+            if errores:
+                for e in errores:
+                    flash(e, "error")
+                return render_template(
+                    "ventas/form.html", clientes=clientes,
+                    cliente_seleccionado=venta.cliente, venta=venta,
+                    fecha_inicial=venta.fecha,
+                )
+
+            # Si ya tenía un movimiento de cuenta corriente asociado, lo borramos
+            # para recrearlo (o no) según los datos nuevos.
+            movimiento_existente = MovimientoCC.query.filter_by(venta_id=venta.id).first()
+            if movimiento_existente:
+                db.session.delete(movimiento_existente)
+
+            venta.cliente_id = cliente_id
+            venta.fecha = fecha_venta
+            venta.descripcion = descripcion
+            venta.monto = monto
+            venta.forma_pago = forma_pago
+
+            if forma_pago == "cuenta_corriente":
+                nuevo_movimiento = MovimientoCC(
+                    cliente_id=cliente_id,
+                    venta_id=venta.id,
+                    fecha=fecha_venta,
+                    tipo="venta",
+                    monto=monto,
+                    descripcion=descripcion or "Venta a cuenta corriente",
+                )
+                db.session.add(nuevo_movimiento)
+
+            db.session.commit()
+            flash("Venta actualizada.", "success")
+            return redirect(url_for("listar_ventas", fecha=fecha_venta.isoformat()))
+
+        return render_template(
+            "ventas/form.html", clientes=clientes,
+            cliente_seleccionado=venta.cliente, venta=venta,
+            fecha_inicial=venta.fecha,
+        )
+
+    @app.route("/ventas/<int:venta_id>/eliminar", methods=["POST"])
+    @administrador_requerido
+    def eliminar_venta(venta_id):
+        venta = db.get_or_404(Venta, venta_id)
+        movimiento = MovimientoCC.query.filter_by(venta_id=venta.id).first()
+        if movimiento:
+            db.session.delete(movimiento)
+        fecha = venta.fecha
+        db.session.delete(venta)
+        db.session.commit()
+        flash("Venta eliminada.", "success")
+        return redirect(url_for("listar_ventas", fecha=fecha.isoformat()))
+
     # ------------------------------------------------------------------
     # CUENTA CORRIENTE
     # ------------------------------------------------------------------
