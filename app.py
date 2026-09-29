@@ -13,6 +13,7 @@
 # ver README.md para cómo entrar desde el celular).
 
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 import os
 
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
@@ -24,14 +25,12 @@ from sqlalchemy import inspect, text
 from extensions import db, login_manager
 from models import Usuario, Cliente, Venta, MovimientoCC
 
+ZONA_HORARIA = ZoneInfo("America/Argentina/Buenos_Aires")
+def hoy_argentina(): return datetime.now(ZONA_HORARIA).date()
 
 def create_app():
     app = Flask(__name__)
 
-    # SECRET_KEY: la usa Flask para firmar las "sesiones" (cookies que
-    # recuerdan que el usuario ya inició sesión). En un proyecto real
-    # esto NO se escribe a mano en el código: se lee de una variable
-    # de entorno. Acá va un valor fijo para simplificar el aprendizaje.
     app.config["SECRET_KEY"] = os.environ.get(
         "SECRET_KEY", "cambia-esta-clave-por-una-propia"
     )
@@ -205,7 +204,7 @@ def create_app():
     @app.route("/")
     @login_required
     def dashboard():
-        hoy = date.today()
+        hoy = hoy_argentina()
         ventas_hoy = Venta.query.filter_by(fecha=hoy).all()
 
         if current_user.es_vendedor:
@@ -394,11 +393,11 @@ def create_app():
     @app.route("/ventas")
     @administrador_requerido
     def listar_ventas():
-        fecha_str = request.args.get("fecha", date.today().isoformat())
+        fecha_str = request.args.get("fecha", hoy_argentina().isoformat())
         try:
             fecha_filtro = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         except ValueError:
-            fecha_filtro = date.today()
+            fecha_filtro = hoy_argentina()
 
         ventas = (
             Venta.query.filter_by(fecha=fecha_filtro)
@@ -427,9 +426,9 @@ def create_app():
             descripcion = request.form.get("descripcion", "").strip()
             forma_pago = request.form.get("forma_pago", "efectivo")
             if current_user.es_vendedor:
-                fecha_venta = date.today()
+                fecha_venta = hoy_argentina()
             else:
-                fecha_str = request.form.get("fecha") or date.today().isoformat()
+                fecha_str = request.form.get("fecha") or hoy_argentina().isoformat()
                 fecha_venta = datetime.strptime(fecha_str, "%Y-%m-%d").date()
 
             errores = []
@@ -489,7 +488,7 @@ def create_app():
             "ventas/form.html",
             clientes=clientes,
             cliente_seleccionado=cliente_seleccionado,
-            fecha_inicial=date.today(),
+            fecha_inicial=hoy_argentina(),
         )
 
     # ------------------------------------------------------------------
@@ -530,9 +529,9 @@ def create_app():
         monto = request.form.get("monto", type=float)
         descripcion = request.form.get("descripcion", "").strip()
         if current_user.es_vendedor:
-            fecha_pago = date.today()
+            fecha_pago = hoy_argentina()
         else:
-            fecha_str = request.form.get("fecha") or date.today().isoformat()
+            fecha_str = request.form.get("fecha") or hoy_argentina().isoformat()
             fecha_pago = datetime.strptime(fecha_str, "%Y-%m-%d").date()
 
         if not monto or monto <= 0:
@@ -602,7 +601,7 @@ def create_app():
         return render_template(
             "pagos/form.html",
             clientes=clientes,
-            fecha_inicial=date.today(),
+            fecha_inicial=hoy_argentina(),
             movimientos_por_cliente=movimientos_por_cliente,
         )
 
@@ -675,7 +674,7 @@ def create_app():
     @app.route("/reportes")
     @administrador_requerido
     def reportes():
-        hoy = date.today()
+        hoy = hoy_argentina()
         desde_str = request.args.get("desde", (hoy - timedelta(days=7)).isoformat())
         hasta_str = request.args.get("hasta", hoy.isoformat())
 
@@ -748,8 +747,9 @@ if __name__ == "__main__":
     # host="0.0.0.0" es lo que permite entrar desde el celular (ver README.md).
     # debug=True reinicia el servidor solo cuando guardás un cambio de código
     # (muy útil mientras aprendés, pero se desactiva en producción real).
+    port=int(os.environ.get("PORT", 5000)),
     app.run(
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        debug=os.environ.get("FLASK_DEBUG", "0") == "1",
+        
+        #debug=os.environ.get("FLASK_DEBUG", "0") == "1",
     )
