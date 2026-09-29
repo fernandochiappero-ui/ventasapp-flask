@@ -85,7 +85,7 @@ def create_app():
     @app.route("/login", methods=["GET", "POST"])
     def login():
         if current_user.is_authenticated:
-            destino = "dashboard" if current_user.es_administrador else "nueva_venta"
+            destino = "dashboard"
             return redirect(url_for(destino))
 
         if request.method == "POST":
@@ -95,7 +95,7 @@ def create_app():
 
             if usuario and usuario.check_password(password):
                 login_user(usuario, remember=True)
-                destino = "dashboard" if usuario.es_administrador else "nueva_venta"
+                destino = "dashboard"
                 return redirect(url_for(destino))
             flash("Usuario o contraseña incorrectos.", "error")
 
@@ -824,9 +824,7 @@ if __name__ == "__main__":
     # host="0.0.0.0" es lo que permite entrar desde el celular (ver README.md).
     # debug=True reinicia el servidor solo cuando guardás un cambio de código
     # (muy útil mientras aprendés, pero se desactiva en producción real).
-    port=int(os.environ.get("PORT", 5000)),
     app.run(
         host="0.0.0.0",
-        
-        #debug=os.environ.get("FLASK_DEBUG", "0") == "1",
+        port=int(os.environ.get("PORT", 5000)),
     )
