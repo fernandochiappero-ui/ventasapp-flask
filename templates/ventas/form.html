@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block titulo %}Nueva venta{% endblock %}
+{% block titulo %}{{ 'Editar venta' if venta else 'Nueva venta' }}{% endblock %}
 {% block contenido %}
-<h1>Cargar venta</h1>
+<h1>{{ 'Editar venta' if venta else 'Cargar venta' }}</h1>
 
-<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
+<a href="{{ url_for('listar_ventas') if venta else url_for('dashboard') }}" class="boton secundario boton-volver">← Volver</a>
 
 <form method="POST" class="tarjeta">
   <label for="cliente_id">Cliente *</label>
@@ -27,19 +27,23 @@
   </div>
 
   <label for="monto">Monto *</label>
-  <input type="number" id="monto" name="monto" step="0.01" min="0.01" required inputmode="decimal">
+  <input type="number" id="monto" name="monto" step="0.01" min="0.01" required inputmode="decimal"
+         value="{{ venta.monto if venta else '' }}">
 
   <label for="descripcion">Descripción</label>
-  <input type="text" id="descripcion" name="descripcion" placeholder="Ej: 2kg de harina, reparación, etc.">
+  <input type="text" id="descripcion" name="descripcion" placeholder="Ej: 2kg de harina, reparación, etc."
+         value="{{ venta.descripcion if venta else '' }}">
 
   <label>Forma de pago *</label>
   <div class="opciones-radio">
     <label class="opcion">
-      <input type="radio" name="forma_pago" value="efectivo" checked onchange="marcar(this)">
+      <input type="radio" name="forma_pago" value="efectivo" onchange="marcar(this)"
+             {% if not venta or venta.forma_pago == 'efectivo' %}checked{% endif %}>
       <span>💵 Efectivo</span>
     </label>
     <label class="opcion">
-      <input type="radio" name="forma_pago" value="cuenta_corriente" onchange="marcar(this)">
+      <input type="radio" name="forma_pago" value="cuenta_corriente" onchange="marcar(this)"
+             {% if venta and venta.forma_pago == 'cuenta_corriente' %}checked{% endif %}>
       <span>📒 Cta. corriente</span>
     </label>
   </div>
@@ -54,7 +58,7 @@
            value="{{ fecha_inicial.isoformat() if fecha_inicial else '' }}">
   {% endif %}
 
-  <button type="submit" class="ancho verde">Registrar venta</button>
+  <button type="submit" class="ancho verde">{{ 'Guardar cambios' if venta else 'Registrar venta' }}</button>
 </form>
 
 <script>
