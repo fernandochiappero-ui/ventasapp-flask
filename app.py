@@ -820,7 +820,7 @@ def create_app():
             deuda_total_actual=deuda_total_actual,
         )
 
-        @app.route("/reportes/pdf")
+    @app.route("/reportes/pdf")
     @administrador_requerido
     def reportes_pdf():
         hoy = hoy_argentina()
@@ -904,7 +904,7 @@ def create_app():
             as_attachment=True, download_name=nombre_archivo,
         )
 
-        @app.route("/reportes/deudores/pdf")
+    @app.route("/reportes/deudores/pdf")
     @administrador_requerido
     def deudores_pdf():
         clientes = Cliente.query.filter_by(activo=True).all()
