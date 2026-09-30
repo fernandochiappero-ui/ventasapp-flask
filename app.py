@@ -13,10 +13,12 @@
 # ver README.md para cómo entrar desde el celular).
 
 from datetime import date, datetime, timedelta
+from io import BytesIO
 from zoneinfo import ZoneInfo
 import os
 
-from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
+from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, send_file
+from fpdf import FPDF
 from flask_login import (
     login_user, logout_user, login_required, current_user
 )
@@ -572,7 +574,7 @@ def create_app():
     # CUENTA CORRIENTE
     # ------------------------------------------------------------------
 
-    @app.route("/cuenta-corriente")
+       @app.route("/cuenta-corriente")
     @administrador_requerido
     def cuenta_corriente_index():
         clientes = Cliente.query.filter_by(activo=True).order_by(Cliente.nombre).all()
@@ -818,6 +820,111 @@ def create_app():
             deuda_total_actual=deuda_total_actual,
         )
 
+    @app.route("/reportes/pdf")
+    @administrador_requerido
+    def reportes_pdf():
+        hoy = hoy_argentina()
+        desde_str = request.args.get("desde", (hoy - timedelta(days=7)).isoformat())
+        hasta_str = request.args.get("hasta", hoy.isoformat())
+        desde = datetime.strptime(desde_str, "%Y-%m-%d").date()
+        hasta = datetime.strptime(hasta_str, "%Y-%m-%d").date()
+
+        ventas = (
+            Venta.query.filter(Venta.fecha >= desde, Venta.fecha <= hasta)
+            .order_by(Venta.fecha, Venta.creado)
+            .all()
+        )
+
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 14)
+        pdf.cell(0, 10, "Detalle de ventas", ln=1)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.cell(0, 8, f"Del {desde.strftime('%d/%m/%Y')} al {hasta.strftime('%d/%m/%Y')}", ln=1)
+        pdf.ln(4)
+
+        anchos = [22, 16, 38, 50, 24, 26]
+        encabezados = ["Fecha", "Hora", "Cliente", "Descripcion", "Forma", "Monto"]
+        pdf.set_font("Helvetica", "B", 9)
+        for ancho, texto in zip(anchos, encabezados):
+            pdf.cell(ancho, 8, texto, border=1)
+        pdf.ln()
+
+        pdf.set_font("Helvetica", "", 9)
+        total = 0.0
+        for venta in ventas:
+            total += venta.monto
+            fila = [
+                venta.fecha.strftime("%d/%m/%Y"),
+                venta.creado.strftime("%H:%M"),
+                venta.cliente.nombre[:20],
+                (venta.descripcion or "Sin descripcion")[:28],
+                "Efectivo" if venta.forma_pago == "efectivo" else "Cta.Cte.",
+                f"${venta.monto:,.2f}",
+            ]
+            for ancho, texto in zip(anchos, fila):
+                pdf.cell(ancho, 7, texto, border=1)
+            pdf.ln()
+
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(sum(anchos[:-1]), 8, "Total", border=1)
+        pdf.cell(anchos[-1], 8, f"${total:,.2f}", border=1)
+
+        buffer = BytesIO(bytes(pdf.output()))
+        nombre_archivo = f"detalle-ventas_{desde.isoformat()}_{hasta.isoformat()}.pdf"
+        return send_file(
+            buffer, mimetype="application/pdf",
+            as_attachment=True, download_name=nombre_archivo,
+        )
+
+    @app.route("/reportes/deudores/pdf")
+    @administrador_requerido
+    def deudores_pdf():
+        clientes = Cliente.query.filter_by(activo=True).all()
+        deudores = sorted(
+            [c for c in clientes if c.saldo > 0], key=lambda c: c.saldo, reverse=True
+        )
+
+        pdf = FPDF()
+        anchos = [22, 16, 20, 46, 26, 28]
+        encabezados = ["Fecha", "Hora", "Tipo", "Descripcion", "Monto", "Saldo"]
+
+        for cliente in deudores:
+            pdf.add_page()
+            pdf.set_font("Helvetica", "B", 14)
+            pdf.cell(0, 10, cliente.nombre, ln=1)
+            pdf.set_font("Helvetica", "", 10)
+            pdf.cell(0, 8, f"Deuda actual: ${cliente.saldo:,.2f}", ln=1)
+            pdf.ln(4)
+
+            pdf.set_font("Helvetica", "B", 9)
+            for ancho, texto in zip(anchos, encabezados):
+                pdf.cell(ancho, 8, texto, border=1)
+            pdf.ln()
+
+            pdf.set_font("Helvetica", "", 9)
+            movimientos = sorted(cliente.movimientos, key=lambda m: (m.fecha, m.creado))
+            saldo_corrido = 0.0
+            for m in movimientos:
+                saldo_corrido += m.monto if m.tipo == "venta" else -m.monto
+                fila = [
+                    m.fecha.strftime("%d/%m/%Y"),
+                    m.creado.strftime("%H:%M"),
+                    "Venta" if m.tipo == "venta" else "Pago",
+                    (m.descripcion or "Sin descripcion")[:26],
+                    f"${m.monto:,.2f}",
+                    f"${saldo_corrido:,.2f}",
+                ]
+                for ancho, texto in zip(anchos, fila):
+                    pdf.cell(ancho, 7, texto, border=1)
+                pdf.ln()
+
+        buffer = BytesIO(bytes(pdf.output()))
+        return send_file(
+            buffer, mimetype="application/pdf",
+            as_attachment=True, download_name="clientes-con-deuda.pdf",
+        )
+    
     return app
 
 

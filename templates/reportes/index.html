@@ -59,6 +59,8 @@
 <div class="tarjeta">
   <h2>Detalle de ventas</h2>
   {% if ventas %}
+    <a href="{{ url_for('reportes_pdf', desde=desde.isoformat(), hasta=hasta.isoformat()) }}"
+       class="boton secundario" style="margin-bottom:10px;">⬇ Descargar PDF</a>
     <div class="tabla-reportes-scroll">
       <table class="reporte">
         <thead>
@@ -110,6 +112,7 @@
 <div class="tarjeta">
   <h2>Clientes con deuda (a hoy)</h2>
   {% if deudores %}
+    <a href="{{ url_for('deudores_pdf') }}" class="boton secundario" style="margin-bottom:10px;">⬇ Descargar PDF</a>
     {% for c in deudores %}
       <a class="renglon" href="{{ url_for('cuenta_corriente_detalle', cliente_id=c.id) }}">
         <div class="principal">{{ c.nombre }}</div>
