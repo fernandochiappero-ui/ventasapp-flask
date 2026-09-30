@@ -935,7 +935,7 @@ def create_app():
             pdf.cell(0, 6, f"Cuenta corriente - {cliente.nombre}", ln=1)
 
             pdf.set_xy(10, 32)
-            pdf.set_font("Helvetica", "", 9)
+            pdf.set_font("Helvetica", "", 13)
             pdf.set_text_color(*gris_texto)
             pdf.cell(0, 6, f"Generado el {hoy_argentina().strftime('%d/%m/%Y')} a las {datetime.now(ZONA_HORARIA).strftime('%H:%M')}", ln=1)
             pdf.set_font("Helvetica", "B", 12)
