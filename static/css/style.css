@@ -897,12 +897,14 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
     font-size: 0.95rem;
   }
 
-  .menu-desplegable .submenu {
+    .menu-desplegable .submenu {
     position: static;
     box-shadow: none;
     border: 0;
     background: #dfe7ef;
+    display: block !important;
   }
+  
 
   .menu-desplegable .submenu a {
     padding-left: 34px;

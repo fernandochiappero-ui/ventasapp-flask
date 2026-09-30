@@ -48,7 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const boton = menu.querySelector(".menu-boton");
     if (!boton) return;
 
-    boton.addEventListener("click", (evento) => {
+      boton.addEventListener("click", (evento) => {
+      if (window.innerWidth <= 859) return; // en celular, el botón navega directo
       evento.preventDefault();
       const abierto = menu.classList.toggle("abierto");
       boton.setAttribute("aria-expanded", String(abierto));
