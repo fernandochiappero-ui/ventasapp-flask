@@ -820,7 +820,7 @@ def create_app():
             deuda_total_actual=deuda_total_actual,
         )
 
-    @app.route("/reportes/pdf")
+        @app.route("/reportes/pdf")
     @administrador_requerido
     def reportes_pdf():
         hoy = hoy_argentina()
@@ -835,25 +835,50 @@ def create_app():
             .all()
         )
 
+        verde = (8, 125, 53)
+        verde_claro = (220, 239, 220)
+        gris_claro = (245, 246, 248)
+        gris_texto = (90, 100, 110)
+
         pdf = FPDF()
         pdf.add_page()
-        pdf.set_font("Helvetica", "B", 14)
-        pdf.cell(0, 10, "Detalle de ventas", ln=1)
+
+        pdf.set_fill_color(*verde)
+        pdf.rect(0, 0, 210, 26, "F")
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.set_xy(10, 7)
+        pdf.cell(0, 8, "Libro de Ventas", ln=1)
         pdf.set_font("Helvetica", "", 10)
-        pdf.cell(0, 8, f"Del {desde.strftime('%d/%m/%Y')} al {hasta.strftime('%d/%m/%Y')}", ln=1)
+        pdf.set_x(10)
+        pdf.cell(0, 6, "Detalle de ventas", ln=1)
+
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_xy(10, 32)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(*gris_texto)
+        pdf.cell(0, 6, f"Periodo: {desde.strftime('%d/%m/%Y')} al {hasta.strftime('%d/%m/%Y')}", ln=1)
+        pdf.cell(0, 6, f"Generado el {hoy_argentina().strftime('%d/%m/%Y')} a las {datetime.now(ZONA_HORARIA).strftime('%H:%M')}", ln=1)
         pdf.ln(4)
 
         anchos = [22, 16, 38, 50, 24, 26]
         encabezados = ["Fecha", "Hora", "Cliente", "Descripcion", "Forma", "Monto"]
         pdf.set_font("Helvetica", "B", 9)
+        pdf.set_fill_color(*verde)
+        pdf.set_text_color(255, 255, 255)
         for ancho, texto in zip(anchos, encabezados):
-            pdf.cell(ancho, 8, texto, border=1)
+            pdf.cell(ancho, 8, texto, border=0, fill=True)
         pdf.ln()
 
         pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(0, 0, 0)
         total = 0.0
-        for venta in ventas:
+        for i, venta in enumerate(ventas):
             total += venta.monto
+            if i % 2 == 0:
+                pdf.set_fill_color(*gris_claro)
+            else:
+                pdf.set_fill_color(255, 255, 255)
             fila = [
                 venta.fecha.strftime("%d/%m/%Y"),
                 venta.creado.strftime("%H:%M"),
@@ -863,12 +888,14 @@ def create_app():
                 f"${venta.monto:,.2f}",
             ]
             for ancho, texto in zip(anchos, fila):
-                pdf.cell(ancho, 7, texto, border=1)
+                pdf.cell(ancho, 7, texto, border=0, fill=True)
             pdf.ln()
 
+        pdf.set_fill_color(*verde_claro)
+        pdf.set_text_color(*verde)
         pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(sum(anchos[:-1]), 8, "Total", border=1)
-        pdf.cell(anchos[-1], 8, f"${total:,.2f}", border=1)
+        pdf.cell(sum(anchos[:-1]), 9, "Total", border=0, fill=True)
+        pdf.cell(anchos[-1], 9, f"${total:,.2f}", border=0, fill=True)
 
         buffer = BytesIO(bytes(pdf.output()))
         nombre_archivo = f"detalle-ventas_{desde.isoformat()}_{hasta.isoformat()}.pdf"
@@ -877,7 +904,7 @@ def create_app():
             as_attachment=True, download_name=nombre_archivo,
         )
 
-    @app.route("/reportes/deudores/pdf")
+        @app.route("/reportes/deudores/pdf")
     @administrador_requerido
     def deudores_pdf():
         clientes = Cliente.query.filter_by(activo=True).all()
@@ -885,28 +912,51 @@ def create_app():
             [c for c in clientes if c.saldo > 0], key=lambda c: c.saldo, reverse=True
         )
 
+        verde = (8, 125, 53)
+        ladrillo = (155, 48, 48)
+        gris_claro = (245, 246, 248)
+        gris_texto = (90, 100, 110)
+
         pdf = FPDF()
         anchos = [22, 16, 20, 46, 26, 28]
         encabezados = ["Fecha", "Hora", "Tipo", "Descripcion", "Monto", "Saldo"]
 
         for cliente in deudores:
             pdf.add_page()
-            pdf.set_font("Helvetica", "B", 14)
-            pdf.cell(0, 10, cliente.nombre, ln=1)
+
+            pdf.set_fill_color(*verde)
+            pdf.rect(0, 0, 210, 26, "F")
+            pdf.set_text_color(255, 255, 255)
+            pdf.set_font("Helvetica", "B", 16)
+            pdf.set_xy(10, 7)
+            pdf.cell(0, 8, "Libro de Ventas", ln=1)
             pdf.set_font("Helvetica", "", 10)
+            pdf.set_x(10)
+            pdf.cell(0, 6, f"Cuenta corriente - {cliente.nombre}", ln=1)
+
+            pdf.set_xy(10, 32)
+            pdf.set_font("Helvetica", "", 9)
+            pdf.set_text_color(*gris_texto)
+            pdf.cell(0, 6, f"Generado el {hoy_argentina().strftime('%d/%m/%Y')} a las {datetime.now(ZONA_HORARIA).strftime('%H:%M')}", ln=1)
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.set_text_color(*ladrillo)
             pdf.cell(0, 8, f"Deuda actual: ${cliente.saldo:,.2f}", ln=1)
             pdf.ln(4)
 
             pdf.set_font("Helvetica", "B", 9)
+            pdf.set_fill_color(*verde)
+            pdf.set_text_color(255, 255, 255)
             for ancho, texto in zip(anchos, encabezados):
-                pdf.cell(ancho, 8, texto, border=1)
+                pdf.cell(ancho, 8, texto, border=0, fill=True)
             pdf.ln()
 
             pdf.set_font("Helvetica", "", 9)
+            pdf.set_text_color(0, 0, 0)
             movimientos = sorted(cliente.movimientos, key=lambda m: (m.fecha, m.creado))
             saldo_corrido = 0.0
-            for m in movimientos:
+            for i, m in enumerate(movimientos):
                 saldo_corrido += m.monto if m.tipo == "venta" else -m.monto
+                pdf.set_fill_color(*gris_claro) if i % 2 == 0 else pdf.set_fill_color(255, 255, 255)
                 fila = [
                     m.fecha.strftime("%d/%m/%Y"),
                     m.creado.strftime("%H:%M"),
@@ -916,7 +966,7 @@ def create_app():
                     f"${saldo_corrido:,.2f}",
                 ]
                 for ancho, texto in zip(anchos, fila):
-                    pdf.cell(ancho, 7, texto, border=1)
+                    pdf.cell(ancho, 7, texto, border=0, fill=True)
                 pdf.ln()
 
         buffer = BytesIO(bytes(pdf.output()))
