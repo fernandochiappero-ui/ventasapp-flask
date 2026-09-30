@@ -811,6 +811,13 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
 .tabla-ventas-ventana table { min-width: 700px; }
 .tabla-ventas-ventana tbody tr:nth-child(even) { background: #e9eff4; }
 .tabla-ventas-ventana small { color: var(--tinta-suave); }
+.tabla-reportes-scroll {
+  overflow-x: auto;
+}
+
+.tabla-reportes-scroll table.reporte {
+  min-width: 650px;
+}
 
 .totales-ventas-ventana {
   display: flex;
