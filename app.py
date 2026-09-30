@@ -926,7 +926,7 @@ def create_app():
 
             pdf.set_fill_color(*verde)
             pdf.rect(0, 0, 210, 26, "F")
-            pdf.set_text_color(255, 255, 255)
+            pdf.set_text_color(200, 155, 155)
             pdf.set_font("Helvetica", "B", 16)
             pdf.set_xy(10, 7)
             pdf.cell(0, 8, "Libro de Ventas", ln=1)
