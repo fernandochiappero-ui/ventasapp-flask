@@ -59,28 +59,30 @@
 <div class="tarjeta">
   <h2>Detalle de ventas</h2>
   {% if ventas %}
-    <table class="reporte">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Cliente</th>
-          <th>Descripción</th>
-          <th>Forma de pago</th>
-          <th class="num">Monto</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for venta in ventas %}
-        <tr>
-          <td>{{ venta.fecha.strftime('%d/%m/%Y') }}</td>
-          <td>{{ venta.cliente.nombre }}</td>
-          <td>{{ venta.descripcion or 'Sin descripción' }}</td>
-          <td>{{ 'Efectivo' if venta.forma_pago == 'efectivo' else 'Cta. Cte.' }}</td>
-          <td class="num cifra">${{ "%.2f"|format(venta.monto) }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="tabla-reportes-scroll">
+      <table class="reporte">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Descripción</th>
+            <th>Forma de pago</th>
+            <th class="num">Monto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for venta in ventas %}
+          <tr>
+            <td>{{ venta.fecha.strftime('%d/%m/%Y') }}</td>
+            <td>{{ venta.cliente.nombre }}</td>
+            <td>{{ venta.descripcion or 'Sin descripción' }}</td>
+            <td>{{ 'Efectivo' if venta.forma_pago == 'efectivo' else 'Cta. Cte.' }}</td>
+            <td class="num cifra">${{ "%.2f"|format(venta.monto) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   {% else %}
     <p class="vacio">No hay ventas para este rango.</p>
   {% endif %}
