@@ -856,3 +856,67 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
   nav.tabs a { text-align: center; }
   main { margin: 0 auto; }
 }
+.menu-movil-boton { display: none; }
+.menu-cerrar-boton { display: none; }
+
+@media (max-width: 859px) {
+  .menu-movil-boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 0;
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 4px 10px;
+    margin-right: 8px;
+    cursor: pointer;
+  }
+
+  nav.tabs {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    width: 100%;
+    height: 100vh;
+    flex-direction: column;
+    overflow-y: auto;
+    background: #eef3f7;
+    padding: 6px 0 20px;
+  }
+
+  nav.tabs.menu-abierto { display: flex; }
+
+  nav.tabs a {
+    border-right: 0;
+    border-bottom: 1px solid #c1ccd6;
+    justify-content: flex-start;
+    padding: 14px 18px;
+    font-size: 0.95rem;
+  }
+
+  .menu-desplegable .submenu {
+    position: static;
+    box-shadow: none;
+    border: 0;
+    background: #dfe7ef;
+  }
+
+  .menu-desplegable .submenu a {
+    padding-left: 34px;
+  }
+
+  .menu-cerrar-boton {
+    display: block;
+    align-self: flex-end;
+    margin: 2px 14px 10px auto;
+    background: none;
+    border: 0;
+    font-size: 1.7rem;
+    line-height: 1;
+    color: #243849;
+    cursor: pointer;
+  }
+}
