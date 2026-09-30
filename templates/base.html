@@ -71,10 +71,8 @@
     <div class="contenido-principal">
       {% if current_user.is_authenticated %}
       <header class="topbar">
-        <header class="topbar">
         <button type="button" id="menu-movil-boton" class="menu-movil-boton"
                 aria-label="Abrir menú" aria-expanded="false" aria-controls="menu-principal">☰</button>
-        <div class="marca">Libro de <span>Ventas</span></div>
         <div class="marca">Libro de <span>Ventas</span></div>
         <span>
           {% if current_user.es_administrador %}
