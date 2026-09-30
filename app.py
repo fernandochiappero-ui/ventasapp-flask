@@ -576,8 +576,12 @@ def create_app():
     @administrador_requerido
     def cuenta_corriente_index():
         clientes = Cliente.query.filter_by(activo=True).order_by(Cliente.nombre).all()
-        clientes = sorted(clientes, key=lambda c: c.saldo, reverse=True)
-        deuda_total = round(sum(cliente.saldo for cliente in clientes if cliente.saldo > 0), 2)
+        clientes = sorted(
+            [c for c in clientes if c.saldo > 0],
+            key=lambda c: c.saldo,
+            reverse=True,
+        )
+        deuda_total = round(sum(cliente.saldo for cliente in clientes), 2)
         return render_template(
             "cuenta/index.html", clientes=clientes, deuda_total=deuda_total
         )
