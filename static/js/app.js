@@ -49,12 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!boton) return;
 
       boton.addEventListener("click", (evento) => {
-      if (window.innerWidth <= 859) return; // en celular, el botón navega directo
       evento.preventDefault();
       const abierto = menu.classList.toggle("abierto");
       boton.setAttribute("aria-expanded", String(abierto));
     });
-
     document.addEventListener("click", (evento) => {
       if (!menu.contains(evento.target)) {
         menu.classList.remove("abierto");
