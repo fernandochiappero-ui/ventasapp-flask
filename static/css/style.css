@@ -873,6 +873,9 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
     margin-right: 8px;
     cursor: pointer;
   }
+  .menu-desplegable > .menu-boton {
+    height: auto;
+  }
 
   nav.tabs {
     display: none;
