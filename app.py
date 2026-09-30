@@ -932,7 +932,7 @@ def create_app():
             pdf.cell(0, 8, "Libro de Ventas", ln=1)
             pdf.set_font("Helvetica", "", 10)
             pdf.set_x(10)
-            pdf.cell(0, 6, f"Cuenta corriente - {cliente.nombre}", ln=1)
+            pdf.cell(0, 10, f"Cuenta corriente - {cliente.nombre}", ln=1)
 
             pdf.set_xy(10, 32)
             pdf.set_font("Helvetica", "", 13)
