@@ -574,7 +574,7 @@ def create_app():
     # CUENTA CORRIENTE
     # ------------------------------------------------------------------
 
-       @app.route("/cuenta-corriente")
+    @app.route("/cuenta-corriente")
     @administrador_requerido
     def cuenta_corriente_index():
         clientes = Cliente.query.filter_by(activo=True).order_by(Cliente.nombre).all()
