@@ -27,8 +27,8 @@
       <div>
         <div class="principal">{{ venta.cliente.nombre }}</div>
         <div class="secundario">{{ venta.descripcion or 'Sin descripción' }}</div>
-      </div>
-      <div class="monto cifra">${{ "%.2f"|format("*****") }}</div>
+    </div>
+      
     </div>
     {% endfor %}
   {% else %}
