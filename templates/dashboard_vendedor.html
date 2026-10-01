@@ -19,23 +19,6 @@
 <a href="{{ url_for('nuevo_cliente', volver='ventas') }}" class="boton secundario ancho">+ Agregar cliente</a>
 <a href="{{ url_for('registrar_pago_vendedor') }}" class="boton secundario ancho">+ Registrar pagos</a>
 
-<div class="tarjeta" style="margin-top:18px;">
-  <h2>Ventas del día ({{ ventas_hoy|length }})</h2>
-  {% if ventas_hoy %}
-    {% for venta in ventas_hoy %}
-    <div class="renglon">
-      <div>
-        <div class="principal">{{ venta.cliente.nombre }}</div>
-        <div class="secundario">{{ venta.descripcion or 'Sin descripción' }}</div>
-    </div>
-      
-    </div>
-    {% endfor %}
-  {% else %}
-    <p class="vacio">Todavía no hay ventas cargadas hoy.</p>
-  {% endif %}
-</div>
-
 <div class="tarjeta">
   <h2>Deudas actuales</h2>
   {% if deudas_hoy %}
