@@ -379,6 +379,11 @@ button.peligro, .boton.peligro { background: var(--ladrillo); }
   overflow-x: auto;
 }
 
+.lista-deslizable {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
 .tabla-deudores table {
   min-width: 880px;
   margin: 0;
