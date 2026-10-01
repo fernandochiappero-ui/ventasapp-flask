@@ -4,14 +4,14 @@
 <h1>Inicio · {{ hoy.strftime('%d/%m/%Y') }}</h1>
 
 <div class="grilla-resumen">
-  <div class="tarjeta metrica">
+  """<div class="tarjeta metrica">
     <div class="etiqueta">Total vendido hoy</div>
     <div class="valor cifra">${{ "%.2f"|format(total_hoy) }}</div>
   </div>
   <div class="tarjeta metrica verde">
     <div class="etiqueta">Efectivo</div>
     <div class="valor cifra">${{ "%.2f"|format(efectivo_hoy) }}</div>
-  </div>
+  </div>""""
   <div class="tarjeta metrica ladrillo">
     <div class="etiqueta">A cuenta corriente</div>
     <div class="valor cifra">${{ "%.2f"|format(cuenta_hoy) }}</div>
