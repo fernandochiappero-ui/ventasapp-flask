@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Lista de precios' if modo == 'precios' else 'Buscar productos' }}{% endblock %}
+{% block contenido %}
+<section class="productos-page {{ 'lista-precios' if modo == 'precios' else '' }}">
+  <h1>{{ 'Lista de precios' if modo == 'precios' else 'Buscar productos de almacén' }}</h1>
+  <div class="acciones-productos no-imprimir">
+    <a href="{{ url_for('nuevo_producto_almacen') }}" class="boton verde">+ Agregar producto</a>
+    <a href="{{ url_for('buscar_productos_almacen') }}" class="boton secundario">Buscar productos</a>
+    {% if modo == 'precios' %}
+      <button type="button" class="boton secundario" onclick="window.print()">Imprimir</button>
+    {% else %}
+      <a href="{{ url_for('imprimir_lista_precios') }}" class="boton secundario">Imprimir lista de precios</a>
+    {% endif %}
+  </div>
+
+  {% if modo == 'buscar' %}
+  <form method="GET" class="buscador no-imprimir">
+    <div class="buscador-fila">
+      <input type="search" name="q" value="{{ busqueda }}"
+             placeholder="Nombre, código o categoría..." aria-label="Buscar productos">
+      <button type="submit" class="verde">Buscar</button>
+    </div>
+  </form>
+  {% endif %}
+
+  <div class="tarjeta tabla-productos-contenedor">
+    {% if productos %}
+    <div class="tabla-productos-scroll">
+      <table class="reporte tabla-productos">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Categoría</th>
+            {% if modo == 'buscar' %}<th class="num">Stock</th>{% endif %}
+            {% if modo == 'buscar' and mostrar_costos %}<th class="num">Costo</th>{% endif %}
+            <th class="num">Precio de venta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for producto in productos %}
+          <tr>
+            <td>{{ producto.codigo or '-' }}</td>
+            <td>
+              <strong>{{ producto.nombre }}</strong>
+              {% if producto.descripcion %}<small class="descripcion-producto">{{ producto.descripcion }}</small>{% endif %}
+            </td>
+            <td>{{ producto.categoria or '-' }}</td>
+            {% if modo == 'buscar' %}<td class="num">{{ '%.3f'|format(producto.stock) }}</td>{% endif %}
+            {% if modo == 'buscar' and mostrar_costos %}<td class="num cifra">${{ '%.2f'|format(producto.precio_costo) }}</td>{% endif %}
+            <td class="num cifra">${{ '%.2f'|format(producto.precio_venta) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="vacio">{% if modo == 'precios' %}No hay productos para imprimir.{% elif busqueda %}No se encontraron productos.{% else %}Todavía no hay productos cargados.{% endif %}</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

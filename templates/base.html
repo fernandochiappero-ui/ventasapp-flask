@@ -10,8 +10,8 @@
      bien en un celular (y no como una web de escritorio achicada) #}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Libro de Ventas{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='6') }}">
-  <script src="{{ url_for('static', filename='js/app.js', v='12') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='7') }}">
+  <script src="{{ url_for('static', filename='js/app.js', v='13') }}" defer></script>
 </head>
 <body>
   <div class="app">
@@ -65,6 +65,16 @@
         </div>
       </div>
       {% endif %}
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nuevo_producto_almacen','buscar_productos_almacen','imprimir_lista_precios'] }}">
+        <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
+          <span class="icono">📦</span>Productos de Almacén
+        </a>
+        <div class="submenu">
+          <a href="{{ url_for('nuevo_producto_almacen') }}">Agregar Productos</a>
+          <a href="{{ url_for('buscar_productos_almacen') }}">Buscar</a>
+          <a href="{{ url_for('imprimir_lista_precios') }}">Imprimir Lista de Precios</a>
+        </div>
+      </div>
     </nav>
     {% endif %}
 

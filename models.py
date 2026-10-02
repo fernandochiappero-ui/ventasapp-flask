@@ -6,6 +6,7 @@
 # SQLAlchemy se encarga de traducir esto a SQL por nosotros.
 
 from datetime import datetime, date
+from decimal import Decimal
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
@@ -112,3 +113,19 @@ class MovimientoCC(db.Model):
     monto = db.Column(db.Float, nullable=False)
     descripcion = db.Column(db.String(200))
     creado = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ProductoAlmacen(db.Model):
+    """Producto y existencias del inventario del almacén."""
+    __tablename__ = "productos_almacen"
+
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(40), unique=True, nullable=True)
+    nombre = db.Column(db.String(150), nullable=False, index=True)
+    categoria = db.Column(db.String(100))
+    descripcion = db.Column(db.String(300))
+    stock = db.Column(db.Numeric(12, 3), nullable=False, default=Decimal("0"))
+    precio_costo = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
+    precio_venta = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
+    activo = db.Column(db.Boolean, nullable=False, default=True)
+    creado = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

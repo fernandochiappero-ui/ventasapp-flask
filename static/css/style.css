@@ -905,14 +905,12 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
     font-size: 0.95rem;
   }
 
-    .menu-desplegable .submenu {
+  .menu-desplegable .submenu {
     position: static;
     box-shadow: none;
     border: 0;
     background: #dfe7ef;
   }
-  }
-  
 
   .menu-desplegable .submenu a {
     padding-left: 34px;
@@ -929,4 +927,38 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
     color: #243849;
     cursor: pointer;
   }
+}
+
+.acciones-productos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.campos-producto-numericos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.campos-producto-numericos input { width: 100%; }
+.tabla-productos-scroll { overflow-x: auto; }
+.tabla-productos { min-width: 620px; }
+.tabla-productos tbody tr:nth-child(even) { background: #e9eff4; }
+.descripcion-producto { display: block; color: var(--tinta-suave); margin-top: 3px; }
+
+@media (max-width: 600px) {
+  .campos-producto-numericos { grid-template-columns: 1fr; gap: 0; }
+  .acciones-productos > * { flex: 1 1 100%; }
+}
+
+@media print {
+  body, html { background: #fff; color: #000; }
+  nav.tabs, header.topbar, .no-imprimir, .boton-volver { display: none !important; }
+  main { max-width: none; margin: 0; padding: 0; }
+  .tarjeta { border: 0; box-shadow: none; padding: 0; }
+  .tabla-productos-scroll { overflow: visible; }
+  .tabla-productos { min-width: 0; width: 100%; }
+  .tabla-productos th { background: #e5e5e5 !important; color: #000 !important; }
 }

@@ -12,6 +12,7 @@ nada en el teléfono, solo abrir el navegador.
 - Cargar ventas diarias (efectivo o a cuenta corriente).
 - Cuenta corriente por cliente: ve el saldo, el historial de movimientos,
   y podés registrar pagos/abonos.
+- Inventario de productos de almacén, búsqueda de artículos y lista de precios imprimible.
 - Reportes de ventas y de deudas, del día o por rango de fechas.
 - Diseño mobile-first: pensado primero para el celular, pero se ve bien
   también en la PC (el menú pasa de barra inferior a barra lateral).
@@ -165,6 +166,15 @@ Con el servidor corriendo en la PC:
 ---
 
 ## 3. Estructura del proyecto (para ir entendiendo el código)
+
+### Productos de almacén
+
+En el menú **Productos de Almacén** están las opciones **Agregar Productos**,
+**Buscar** e **Imprimir Lista de Precios**. Cada producto guarda código,
+nombre, categoría, descripción, stock, precio de costo y precio de venta.
+El código puede dejarse vacío; si se ingresa, debe ser único. El costo solo
+se muestra a administradores, mientras que todos los usuarios pueden ver
+stock y precio de venta.
 
 ```
 ventasapp/
