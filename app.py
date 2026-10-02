@@ -13,7 +13,7 @@
 # ver README.md para cómo entrar desde el celular).
 
 from datetime import date, datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import BytesIO
 from zoneinfo import ZoneInfo
 import os
@@ -57,6 +57,18 @@ def create_app():
                 text(
                     "ALTER TABLE usuarios ADD COLUMN rol "
                     "VARCHAR(20) NOT NULL DEFAULT 'administrador'"
+                )
+            )
+            db.session.commit()
+        columnas_producto = {
+            columna["name"]
+            for columna in inspect(db.engine).get_columns("productos_almacen")
+        }
+        if "porcentaje_ganancia" not in columnas_producto:
+            db.session.execute(
+                text(
+                    "ALTER TABLE productos_almacen ADD COLUMN "
+                    "porcentaje_ganancia NUMERIC(6, 2) NOT NULL DEFAULT 0"
                 )
             )
             db.session.commit()
@@ -396,6 +408,7 @@ def create_app():
     @app.route("/productos/almacen/nuevo", methods=["GET", "POST"])
     @login_required
     def nuevo_producto_almacen():
+        mostrar_costos = current_user.es_administrador
         if request.method == "POST":
             codigo = request.form.get("codigo", "").strip().upper() or None
             nombre = request.form.get("nombre", "").strip()
@@ -404,15 +417,24 @@ def create_app():
             errores = []
 
             valores = {}
-            for campo, etiqueta in (
-                ("stock", "stock"),
-                ("precio_costo", "precio de costo"),
-                ("precio_venta", "precio de venta"),
-            ):
+            campos_numericos = [("stock", "stock")]
+            if mostrar_costos:
+                campos_numericos.extend(
+                    [
+                        ("precio_costo", "precio de costo"),
+                        ("porcentaje_ganancia", "porcentaje de ganancia"),
+                    ]
+                )
+            else:
+                campos_numericos.append(("precio_venta", "precio de venta"))
+
+            for campo, etiqueta in campos_numericos:
                 texto = request.form.get(campo, "0").strip().replace(",", ".")
                 try:
                     valor = Decimal(texto or "0")
                     if not valor.is_finite() or valor < 0:
+                        raise InvalidOperation
+                    if campo == "porcentaje_ganancia" and valor > 10000:
                         raise InvalidOperation
                     valores[campo] = valor
                 except InvalidOperation:
@@ -426,7 +448,20 @@ def create_app():
             if errores:
                 for error in errores:
                     flash(error, "error")
-                return render_template("productos/form.html")
+                return render_template(
+                    "productos/form.html", mostrar_costos=mostrar_costos
+                )
+
+            if mostrar_costos:
+                precio_costo = valores["precio_costo"]
+                porcentaje_ganancia = valores["porcentaje_ganancia"]
+                precio_venta = (
+                    precio_costo * (Decimal("1") + porcentaje_ganancia / Decimal("100"))
+                ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            else:
+                precio_costo = Decimal("0")
+                porcentaje_ganancia = Decimal("0")
+                precio_venta = valores["precio_venta"]
 
             producto = ProductoAlmacen(
                 codigo=codigo,
@@ -434,15 +469,18 @@ def create_app():
                 categoria=categoria or None,
                 descripcion=descripcion or None,
                 stock=valores["stock"],
-                precio_costo=valores["precio_costo"],
-                precio_venta=valores["precio_venta"],
+                precio_costo=precio_costo,
+                porcentaje_ganancia=porcentaje_ganancia,
+                precio_venta=precio_venta,
             )
             db.session.add(producto)
             db.session.commit()
             flash(f"Producto '{producto.nombre}' agregado al almacén.", "success")
             return redirect(url_for("buscar_productos_almacen", q=producto.nombre))
 
-        return render_template("productos/form.html")
+        return render_template(
+            "productos/form.html", mostrar_costos=mostrar_costos
+        )
 
     @app.route("/productos/almacen/buscar")
     @login_required
