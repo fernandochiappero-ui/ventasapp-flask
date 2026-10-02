@@ -29,6 +29,10 @@
       <table class="reporte tabla-productos">
         <thead>
           <tr>
+            {% if modo == 'buscar' and current_user.es_vendedor %}
+            <th>Descripción</th>
+            <th class="num">Precio de venta</th>
+            {% else %}
             <th>Código</th>
             <th>Producto</th>
             <th>Categoría</th>
@@ -39,11 +43,16 @@
             {% endif %}
             <th class="num">Precio de venta</th>
             {% if modo == 'buscar' and current_user.es_administrador %}<th class="no-imprimir">Acciones</th>{% endif %}
+            {% endif %}
           </tr>
         </thead>
         <tbody>
           {% for producto in productos %}
           <tr>
+            {% if modo == 'buscar' and current_user.es_vendedor %}
+            <td>{{ producto.descripcion or producto.nombre }}</td>
+            <td class="num cifra">${{ '%.2f'|format(producto.precio_venta) }}</td>
+            {% else %}
             <td>{{ producto.codigo or '-' }}</td>
             <td>
               <strong>{{ producto.nombre }}</strong>
@@ -69,6 +78,7 @@
                 <button type="submit" class="boton peligro">Eliminar</button>
               </form>
             </td>
+            {% endif %}
             {% endif %}
           </tr>
           {% endfor %}
