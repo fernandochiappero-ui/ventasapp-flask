@@ -7,6 +7,23 @@ function volverPantalla() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const campoCostoProducto = document.getElementById("precio_costo");
+  const campoPorcentajeProducto = document.getElementById("porcentaje_ganancia");
+  const campoPrecioCalculado = document.getElementById("precio_venta_calculado");
+
+  if (campoCostoProducto && campoPorcentajeProducto && campoPrecioCalculado) {
+    const calcularPrecioProducto = () => {
+      const costo = Number(campoCostoProducto.value.replace(",", "."));
+      const porcentaje = Number(campoPorcentajeProducto.value.replace(",", "."));
+      const precio = costo * (1 + porcentaje / 100);
+      campoPrecioCalculado.value = Number.isFinite(precio) ? precio.toFixed(2) : "0.00";
+    };
+
+    campoCostoProducto.addEventListener("input", calcularPrecioProducto);
+    campoPorcentajeProducto.addEventListener("input", calcularPrecioProducto);
+    calcularPrecioProducto();
+  }
+
   const avisoPago = document.getElementById("aviso-pago");
   if (avisoPago) {
     const claveUltimoPago = "ultimo-pago-notificado";

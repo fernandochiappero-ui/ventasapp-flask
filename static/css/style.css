@@ -943,6 +943,10 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
 }
 
 .campos-producto-numericos input { width: 100%; }
+.campo-porcentaje { display: flex; align-items: center; }
+.campo-porcentaje input { min-width: 0; }
+.campo-porcentaje span { padding: 8px 10px; background: #e0e7ee; border: 1px solid #899aaa; border-left: 0; }
+#precio_venta_calculado { background: #e6efec; color: var(--verde); font-weight: 700; }
 .tabla-productos-scroll { overflow-x: auto; }
 .tabla-productos { min-width: 620px; }
 .tabla-productos tbody tr:nth-child(even) { background: #e9eff4; }

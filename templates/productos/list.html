@@ -33,7 +33,10 @@
             <th>Producto</th>
             <th>Categoría</th>
             {% if modo == 'buscar' %}<th class="num">Stock</th>{% endif %}
-            {% if modo == 'buscar' and mostrar_costos %}<th class="num">Costo</th>{% endif %}
+            {% if modo == 'buscar' and mostrar_costos %}
+              <th class="num">Costo</th>
+              <th class="num">Ganancia %</th>
+            {% endif %}
             <th class="num">Precio de venta</th>
           </tr>
         </thead>
@@ -47,7 +50,10 @@
             </td>
             <td>{{ producto.categoria or '-' }}</td>
             {% if modo == 'buscar' %}<td class="num">{{ '%.3f'|format(producto.stock) }}</td>{% endif %}
-            {% if modo == 'buscar' and mostrar_costos %}<td class="num cifra">${{ '%.2f'|format(producto.precio_costo) }}</td>{% endif %}
+            {% if modo == 'buscar' and mostrar_costos %}
+              <td class="num cifra">${{ '%.2f'|format(producto.precio_costo) }}</td>
+              <td class="num">{{ '%.2f'|format(producto.porcentaje_ganancia) }}%</td>
+            {% endif %}
             <td class="num cifra">${{ '%.2f'|format(producto.precio_venta) }}</td>
           </tr>
           {% endfor %}

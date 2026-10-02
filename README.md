@@ -172,9 +172,12 @@ Con el servidor corriendo en la PC:
 En el menú **Productos de Almacén** están las opciones **Agregar Productos**,
 **Buscar** e **Imprimir Lista de Precios**. Cada producto guarda código,
 nombre, categoría, descripción, stock, precio de costo y precio de venta.
-El código puede dejarse vacío; si se ingresa, debe ser único. El costo solo
-se muestra a administradores, mientras que todos los usuarios pueden ver
-stock y precio de venta.
+El administrador ingresa costo y porcentaje de ganancia; el sistema calcula
+el precio de venta con `costo × (1 + porcentaje / 100)` y redondea a centavos.
+El código puede dejarse vacío; si se ingresa, debe ser único. El costo y el
+porcentaje solo se muestran a administradores, mientras que todos los usuarios
+pueden ver stock y precio de venta. El vendedor puede cargar el precio de venta
+manualmente.
 
 ```
 ventasapp/

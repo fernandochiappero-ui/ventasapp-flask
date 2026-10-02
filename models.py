@@ -126,6 +126,9 @@ class ProductoAlmacen(db.Model):
     descripcion = db.Column(db.String(300))
     stock = db.Column(db.Numeric(12, 3), nullable=False, default=Decimal("0"))
     precio_costo = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
+    porcentaje_ganancia = db.Column(
+        db.Numeric(6, 2), nullable=False, default=Decimal("0")
+    )
     precio_venta = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
