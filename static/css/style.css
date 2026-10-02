@@ -936,6 +936,21 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
   margin-bottom: 14px;
 }
 
+.productos-autocompletar { min-width: 0; }
+.productos-vendedor-lista { width: 100%; min-width: 0; }
+.producto-vendedor-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--linea);
+}
+.producto-vendedor-fila:last-child { border-bottom: 0; }
+.producto-vendedor-nombre { min-width: 0; overflow-wrap: anywhere; }
+.producto-vendedor-precio { white-space: nowrap; color: var(--verde); }
+
 .campos-producto-numericos {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

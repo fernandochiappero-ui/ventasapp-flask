@@ -16,8 +16,13 @@
   {% if modo == 'buscar' %}
   <form method="GET" class="buscador no-imprimir">
     <div class="buscador-fila">
-      <input type="search" name="q" value="{{ busqueda }}"
-             placeholder="Nombre, código o categoría..." aria-label="Buscar productos">
+      <div class="buscador-autocompletar productos-autocompletar">
+        <input type="search" id="buscar-producto-almacen" name="q" value="{{ busqueda }}"
+               placeholder="Buscar producto..." aria-label="Buscar productos"
+               autocomplete="off"
+               data-sugerencias-url="{{ url_for('sugerencias_productos_almacen') }}">
+        <div id="sugerencias-productos-almacen" class="clientes-sugerencias" hidden></div>
+      </div>
       <button type="submit" class="verde">Buscar</button>
     </div>
   </form>
@@ -25,6 +30,16 @@
 
   <div class="tarjeta tabla-productos-contenedor">
     {% if productos %}
+    {% if modo == 'buscar' and current_user.es_vendedor %}
+    <div class="productos-vendedor-lista">
+      {% for producto in productos %}
+      <div class="producto-vendedor-fila">
+        <span class="producto-vendedor-nombre">{{ producto.nombre }}</span>
+        <strong class="producto-vendedor-precio cifra">${{ '%.2f'|format(producto.precio_venta) }}</strong>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
     <div class="tabla-productos-scroll">
       <table class="reporte tabla-productos">
         <thead>
@@ -85,6 +100,7 @@
         </tbody>
       </table>
     </div>
+    {% endif %}
     {% else %}
       <p class="vacio">{% if modo == 'precios' %}No hay productos para imprimir.{% elif busqueda %}No se encontraron productos.{% else %}Todavía no hay productos cargados.{% endif %}</p>
     {% endif %}

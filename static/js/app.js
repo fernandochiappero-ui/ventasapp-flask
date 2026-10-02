@@ -244,6 +244,82 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
   });
+
+  const campoProducto = document.getElementById("buscar-producto-almacen");
+  const sugerenciasProductos = document.getElementById("sugerencias-productos-almacen");
+  if (campoProducto && sugerenciasProductos) {
+    let sugerenciasVisibles = [];
+    let indiceProductoSeleccionado = -1;
+    let solicitudSugerencias = 0;
+
+    const cerrarSugerenciasProductos = () => {
+      sugerenciasProductos.hidden = true;
+      indiceProductoSeleccionado = -1;
+    };
+
+    const actualizarSugerenciasProductos = async () => {
+      const prefijo = campoProducto.value.trim();
+      const solicitudActual = ++solicitudSugerencias;
+      sugerenciasProductos.replaceChildren();
+      sugerenciasVisibles = [];
+      indiceProductoSeleccionado = -1;
+      if (!prefijo) {
+        cerrarSugerenciasProductos();
+        return;
+      }
+
+      try {
+        const url = `${campoProducto.dataset.sugerenciasUrl}?q=${encodeURIComponent(prefijo)}`;
+        const respuesta = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+        if (!respuesta.ok || solicitudActual !== solicitudSugerencias) return;
+        const datos = await respuesta.json();
+        sugerenciasVisibles = datos.productos || [];
+        sugerenciasVisibles.forEach((nombre) => {
+          const opcion = document.createElement("button");
+          opcion.type = "button";
+          opcion.className = "sugerencia-cliente";
+          opcion.textContent = nombre;
+          opcion.addEventListener("click", () => {
+            campoProducto.value = nombre;
+            campoProducto.form.submit();
+          });
+          sugerenciasProductos.append(opcion);
+        });
+        sugerenciasProductos.hidden = sugerenciasVisibles.length === 0;
+      } catch {
+        cerrarSugerenciasProductos();
+      }
+    };
+
+    campoProducto.addEventListener("input", actualizarSugerenciasProductos);
+    campoProducto.addEventListener("keydown", (evento) => {
+      if (evento.key === "Escape") {
+        cerrarSugerenciasProductos();
+        return;
+      }
+      if (sugerenciasProductos.hidden || !sugerenciasVisibles.length) return;
+      if (evento.key === "ArrowDown" || evento.key === "ArrowUp") {
+        evento.preventDefault();
+        const direccion = evento.key === "ArrowDown" ? 1 : -1;
+        indiceProductoSeleccionado = (
+          indiceProductoSeleccionado + direccion + sugerenciasVisibles.length
+        ) % sugerenciasVisibles.length;
+        [...sugerenciasProductos.children].forEach((opcion, indice) => {
+          opcion.classList.toggle("seleccionada", indice === indiceProductoSeleccionado);
+        });
+      } else if (evento.key === "Enter" && indiceProductoSeleccionado >= 0) {
+        evento.preventDefault();
+        campoProducto.value = sugerenciasVisibles[indiceProductoSeleccionado];
+        campoProducto.form.submit();
+      }
+    });
+
+    document.addEventListener("click", (evento) => {
+      if (!sugerenciasProductos.contains(evento.target) && evento.target !== campoProducto) {
+        cerrarSugerenciasProductos();
+      }
+    });
+  }
 });
   const botonMenuMovil = document.getElementById("menu-movil-boton");
   const menuPrincipal = document.getElementById("menu-principal");
