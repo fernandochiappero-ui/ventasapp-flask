@@ -951,6 +951,9 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
 .tabla-productos { min-width: 620px; }
 .tabla-productos tbody tr:nth-child(even) { background: #e9eff4; }
 .descripcion-producto { display: block; color: var(--tinta-suave); margin-top: 3px; }
+.acciones-producto { display: flex; align-items: center; gap: 5px; }
+.acciones-producto form { margin: 0; }
+.acciones-producto .boton { padding: 6px 8px; font-size: 0.78rem; }
 
 @media (max-width: 600px) {
   .campos-producto-numericos { grid-template-columns: 1fr; gap: 0; }

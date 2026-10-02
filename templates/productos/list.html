@@ -38,6 +38,7 @@
               <th class="num">Ganancia %</th>
             {% endif %}
             <th class="num">Precio de venta</th>
+            {% if modo == 'buscar' and current_user.es_administrador %}<th class="no-imprimir">Acciones</th>{% endif %}
           </tr>
         </thead>
         <tbody>
@@ -55,6 +56,20 @@
               <td class="num">{{ '%.2f'|format(producto.porcentaje_ganancia) }}%</td>
             {% endif %}
             <td class="num cifra">${{ '%.2f'|format(producto.precio_venta) }}</td>
+            {% if modo == 'buscar' and current_user.es_administrador %}
+            <td class="acciones-producto no-imprimir">
+              <a href="{{ url_for('editar_producto_almacen', producto_id=producto.id) }}"
+                 class="boton secundario">Editar</a>
+              <form method="POST"
+                    action="{{ url_for('eliminar_producto_almacen', producto_id=producto.id) }}"
+                    data-confirmar-eliminacion
+                    data-titulo="¿Dar de baja producto?"
+                    data-mensaje="¿Querés dar de baja {{ producto.nombre }}? No aparecerá en las búsquedas, pero se conservará el registro."
+                    data-boton="Dar de baja">
+                <button type="submit" class="boton peligro">Eliminar</button>
+              </form>
+            </td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>

@@ -79,13 +79,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const modal = document.getElementById("confirmacion-modal");
+  const tituloConfirmacion = document.getElementById("confirmacion-titulo");
   const mensaje = document.getElementById("confirmacion-mensaje");
   const cancelar = document.getElementById("confirmacion-cancelar");
   const aceptar = document.getElementById("confirmacion-aceptar");
 
   let formularioPendiente = null;
 
-  if (modal && mensaje && cancelar && aceptar) {
+  if (modal && tituloConfirmacion && mensaje && cancelar && aceptar) {
     const cerrarModal = () => {
       modal.hidden = true;
       formularioPendiente = null;
@@ -95,7 +96,10 @@ document.addEventListener("DOMContentLoaded", () => {
       formulario.addEventListener("submit", (evento) => {
         evento.preventDefault();
         formularioPendiente = formulario;
-        mensaje.textContent = `¿Estás seguro de que querés eliminar al cliente ${formulario.dataset.cliente}? Sus ventas e historial se conservarán.`;
+        tituloConfirmacion.textContent = formulario.dataset.titulo || "¿Eliminar cliente?";
+        mensaje.textContent = formulario.dataset.mensaje
+          || `¿Estás seguro de que querés eliminar al cliente ${formulario.dataset.cliente}? Sus ventas e historial se conservarán.`;
+        aceptar.textContent = formulario.dataset.boton || "Eliminar";
         modal.hidden = false;
         cancelar.focus();
       });

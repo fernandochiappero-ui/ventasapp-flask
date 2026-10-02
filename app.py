@@ -482,6 +482,85 @@ def create_app():
             "productos/form.html", mostrar_costos=mostrar_costos
         )
 
+    @app.route("/productos/almacen/<int:producto_id>/editar", methods=["GET", "POST"])
+    @administrador_requerido
+    def editar_producto_almacen(producto_id):
+        producto = ProductoAlmacen.query.filter_by(
+            id=producto_id, activo=True
+        ).first_or_404()
+
+        if request.method == "POST":
+            codigo = request.form.get("codigo", "").strip().upper() or None
+            nombre = request.form.get("nombre", "").strip()
+            categoria = request.form.get("categoria", "").strip()
+            descripcion = request.form.get("descripcion", "").strip()
+            errores = []
+            valores = {}
+
+            for campo, etiqueta in (
+                ("stock", "stock"),
+                ("precio_costo", "precio de costo"),
+                ("porcentaje_ganancia", "porcentaje de ganancia"),
+            ):
+                texto = request.form.get(campo, "").strip().replace(",", ".")
+                try:
+                    valor = Decimal(texto)
+                    if not valor.is_finite() or valor < 0:
+                        raise InvalidOperation
+                    if campo == "porcentaje_ganancia" and valor > 10000:
+                        raise InvalidOperation
+                    valores[campo] = valor
+                except InvalidOperation:
+                    errores.append(f"El {etiqueta} debe ser un número igual o mayor a cero.")
+
+            if not nombre:
+                errores.append("El nombre del producto es obligatorio.")
+            codigo_existente = ProductoAlmacen.query.filter(
+                ProductoAlmacen.codigo == codigo,
+                ProductoAlmacen.id != producto.id,
+            ).first() if codigo else None
+            if codigo_existente:
+                errores.append("Ya existe otro producto con ese código.")
+
+            if errores:
+                for error in errores:
+                    flash(error, "error")
+                return render_template(
+                    "productos/form.html",
+                    producto=producto,
+                    mostrar_costos=True,
+                )
+
+            producto.codigo = codigo
+            producto.nombre = nombre
+            producto.categoria = categoria or None
+            producto.descripcion = descripcion or None
+            producto.stock = valores["stock"]
+            producto.precio_costo = valores["precio_costo"]
+            producto.porcentaje_ganancia = valores["porcentaje_ganancia"]
+            producto.precio_venta = (
+                producto.precio_costo
+                * (Decimal("1") + producto.porcentaje_ganancia / Decimal("100"))
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            db.session.commit()
+            flash(f"Producto '{producto.nombre}' actualizado.", "success")
+            return redirect(url_for("buscar_productos_almacen", q=producto.nombre))
+
+        return render_template(
+            "productos/form.html", producto=producto, mostrar_costos=True
+        )
+
+    @app.route("/productos/almacen/<int:producto_id>/eliminar", methods=["POST"])
+    @administrador_requerido
+    def eliminar_producto_almacen(producto_id):
+        producto = ProductoAlmacen.query.filter_by(
+            id=producto_id, activo=True
+        ).first_or_404()
+        producto.activo = False
+        db.session.commit()
+        flash(f"Producto '{producto.nombre}' dado de baja.", "success")
+        return redirect(url_for("buscar_productos_almacen"))
+
     @app.route("/productos/almacen/buscar")
     @login_required
     def buscar_productos_almacen():
