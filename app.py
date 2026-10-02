@@ -13,6 +13,7 @@
 # ver README.md para cómo entrar desde el celular).
 
 from datetime import date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from zoneinfo import ZoneInfo
 import os
@@ -23,9 +24,9 @@ from flask_login import (
     login_user, logout_user, login_required, current_user
 )
 from functools import wraps
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, or_, text
 from extensions import db, login_manager
-from models import Usuario, Cliente, Venta, MovimientoCC
+from models import Usuario, Cliente, Venta, MovimientoCC, ProductoAlmacen
 
 ZONA_HORARIA = ZoneInfo("America/Argentina/Buenos_Aires")
 def hoy_argentina(): return datetime.now(ZONA_HORARIA).date()
@@ -387,6 +388,100 @@ def create_app():
         db.session.commit()
         flash(f"Cliente '{cliente.nombre}' dado de baja.", "success")
         return redirect(url_for("listar_clientes"))
+
+    # ------------------------------------------------------------------
+    # PRODUCTOS DE ALMACEN
+    # ------------------------------------------------------------------
+
+    @app.route("/productos/almacen/nuevo", methods=["GET", "POST"])
+    @login_required
+    def nuevo_producto_almacen():
+        if request.method == "POST":
+            codigo = request.form.get("codigo", "").strip().upper() or None
+            nombre = request.form.get("nombre", "").strip()
+            categoria = request.form.get("categoria", "").strip()
+            descripcion = request.form.get("descripcion", "").strip()
+            errores = []
+
+            valores = {}
+            for campo, etiqueta in (
+                ("stock", "stock"),
+                ("precio_costo", "precio de costo"),
+                ("precio_venta", "precio de venta"),
+            ):
+                texto = request.form.get(campo, "0").strip().replace(",", ".")
+                try:
+                    valor = Decimal(texto or "0")
+                    if not valor.is_finite() or valor < 0:
+                        raise InvalidOperation
+                    valores[campo] = valor
+                except InvalidOperation:
+                    errores.append(f"El {etiqueta} debe ser un número igual o mayor a cero.")
+
+            if not nombre:
+                errores.append("El nombre del producto es obligatorio.")
+            if codigo and ProductoAlmacen.query.filter_by(codigo=codigo).first():
+                errores.append("Ya existe un producto con ese código.")
+
+            if errores:
+                for error in errores:
+                    flash(error, "error")
+                return render_template("productos/form.html")
+
+            producto = ProductoAlmacen(
+                codigo=codigo,
+                nombre=nombre,
+                categoria=categoria or None,
+                descripcion=descripcion or None,
+                stock=valores["stock"],
+                precio_costo=valores["precio_costo"],
+                precio_venta=valores["precio_venta"],
+            )
+            db.session.add(producto)
+            db.session.commit()
+            flash(f"Producto '{producto.nombre}' agregado al almacén.", "success")
+            return redirect(url_for("buscar_productos_almacen", q=producto.nombre))
+
+        return render_template("productos/form.html")
+
+    @app.route("/productos/almacen/buscar")
+    @login_required
+    def buscar_productos_almacen():
+        busqueda = request.args.get("q", "").strip()
+        consulta = ProductoAlmacen.query.filter_by(activo=True)
+        if busqueda:
+            patron = f"%{busqueda}%"
+            consulta = consulta.filter(
+                or_(
+                    ProductoAlmacen.nombre.ilike(patron),
+                    ProductoAlmacen.codigo.ilike(patron),
+                    ProductoAlmacen.categoria.ilike(patron),
+                )
+            )
+        productos = consulta.order_by(ProductoAlmacen.nombre).all()
+        return render_template(
+            "productos/list.html",
+            productos=productos,
+            busqueda=busqueda,
+            modo="buscar",
+            mostrar_costos=current_user.es_administrador,
+        )
+
+    @app.route("/productos/almacen/lista-precios")
+    @login_required
+    def imprimir_lista_precios():
+        productos = (
+            ProductoAlmacen.query.filter_by(activo=True)
+            .order_by(ProductoAlmacen.nombre)
+            .all()
+        )
+        return render_template(
+            "productos/list.html",
+            productos=productos,
+            busqueda="",
+            modo="precios",
+            mostrar_costos=False,
+        )
 
     # ------------------------------------------------------------------
     # VENTAS
