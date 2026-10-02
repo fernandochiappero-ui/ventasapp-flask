@@ -564,14 +564,14 @@ def create_app():
     @app.route("/productos/almacen/sugerencias")
     @login_required
     def sugerencias_productos_almacen():
-        prefijo = request.args.get("q", "").strip()
-        if not prefijo:
+        termino = request.args.get("q", "").strip()
+        if not termino:
             return jsonify({"productos": []})
 
         productos = (
             ProductoAlmacen.query.filter(
                 ProductoAlmacen.activo.is_(True),
-                ProductoAlmacen.nombre.ilike(f"{prefijo}%"),
+                ProductoAlmacen.nombre.ilike(f"%{termino}%"),
             )
             .order_by(ProductoAlmacen.nombre)
             .limit(30)
