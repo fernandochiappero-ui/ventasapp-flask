@@ -22,12 +22,14 @@
 <div class="tarjeta">
   <h2>Deudas actuales</h2>
   {% if deudas_hoy %}
-    {% for deuda in deudas_hoy %}
-    <div class="renglon">
-      <div class="principal">{{ deuda.cliente.nombre }}</div>
-      <div class="monto cifra ladrillo">${{ "%.2f"|format(deuda.monto) }}</div>
+    <div class="lista-deslizable">
+      {% for deuda in deudas_hoy %}
+      <div class="renglon">
+        <div class="principal">{{ deuda.cliente.nombre }}</div>
+        <div class="monto cifra ladrillo">${{ "%.2f"|format(deuda.monto) }}</div>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   {% else %}
     <p class="vacio">No hay deudas pendientes.</p>
   {% endif %}
