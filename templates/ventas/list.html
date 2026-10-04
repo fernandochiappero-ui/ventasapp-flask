@@ -27,6 +27,7 @@
         <tr>
           <th>Fecha / hora</th>
           <th>Cliente</th>
+          <th>Usuario</th>
           <th>Descripción</th>
           <th>Forma de pago</th>
           <th class="num">Monto</th>
@@ -38,6 +39,7 @@
         <tr>
           <td>{{ venta.fecha.strftime('%d/%m/%Y') }}<br><small>{{ venta.creado.strftime('%H:%M') }}</small></td>
           <td>{{ venta.cliente.nombre }}</td>
+          <td>{{ venta.usuario.username if venta.usuario else 'Sistema' }}</td>
           <td>{{ venta.descripcion or 'Sin descripción' }}</td>
           <td>{{ 'Efectivo' if venta.forma_pago == 'efectivo' else 'Cta. Cte.' }}</td>
           <td class="num cifra">${{ "%.2f"|format(venta.monto) }}</td>

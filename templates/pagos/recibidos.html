@@ -15,6 +15,7 @@
             <th>Cliente</th>
             <th>Fecha</th>
             <th>Hora</th>
+            <th>Usuario</th>
             <th>Detalle</th>
             <th class="num">Monto</th>
           </tr>
@@ -25,6 +26,7 @@
             <td>{{ pago.cliente.nombre }}</td>
             <td>{{ pago.fecha.strftime('%d/%m/%Y') }}</td>
             <td>{{ pago.creado.strftime('%H:%M:%S') }}</td>
+            <td>{{ pago.usuario.username if pago.usuario else 'Sistema' }}</td>
             <td>{{ pago.descripcion or 'Pago / abono' }}</td>
             <td class="num cifra verde">${{ "%.2f"|format(pago.monto) }}</td>
           </tr>

@@ -32,9 +32,10 @@
       <div class="renglon">
         <div>
           <div class="principal">
-            {{ 'Venta' if f.mov.tipo == 'venta' else 'Pago' }} · {{ f.mov.fecha.strftime('%d/%m/%Y') }}
+            {{ 'Venta' if f.mov.tipo == 'venta' else 'Pago' }} · {{ f.mov.fecha.strftime('%d/%m/%Y') }} {{ f.mov.creado.strftime('%H:%M') }}
           </div>
           <div class="secundario">{{ f.mov.descripcion or '' }}</div>
+          <div class="secundario">Usuario: {{ f.mov.usuario.username if f.mov.usuario else 'Sistema' }}</div>
         </div>
         <div style="text-align:right;">
           <div class="monto cifra {{ 'ladrillo' if f.mov.tipo == 'venta' else 'verde' }}">

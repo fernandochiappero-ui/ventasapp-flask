@@ -86,11 +86,13 @@ class Venta(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
     fecha = db.Column(db.Date, default=date.today, nullable=False)
     descripcion = db.Column(db.String(200))
     monto = db.Column(db.Float, nullable=False)
     forma_pago = db.Column(db.String(20), nullable=False)  # "efectivo" o "cuenta_corriente"
     creado = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id], backref="ventas_registradas")
 
 
 class MovimientoCC(db.Model):
@@ -108,11 +110,13 @@ class MovimientoCC(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
     venta_id = db.Column(db.Integer, db.ForeignKey("ventas.id"), nullable=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
     fecha = db.Column(db.Date, default=date.today, nullable=False)
     tipo = db.Column(db.String(10), nullable=False)  # "venta" | "pago"
     monto = db.Column(db.Float, nullable=False)
     descripcion = db.Column(db.String(200))
     creado = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id], backref="movimientos_cc_registrados")
 
 
 class ProductoAlmacen(db.Model):

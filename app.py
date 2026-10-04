@@ -72,6 +72,23 @@ def create_app():
                 )
             )
             db.session.commit()
+        columnas_ventas = {
+            columna["name"] for columna in inspect(db.engine).get_columns("ventas")
+        }
+        if "usuario_id" not in columnas_ventas:
+            db.session.execute(
+                text("ALTER TABLE ventas ADD COLUMN usuario_id INTEGER")
+            )
+            db.session.commit()
+        columnas_movimientos = {
+            columna["name"]
+            for columna in inspect(db.engine).get_columns("movimientos_cc")
+        }
+        if "usuario_id" not in columnas_movimientos:
+            db.session.execute(
+                text("ALTER TABLE movimientos_cc ADD COLUMN usuario_id INTEGER")
+            )
+            db.session.commit()
     login_manager.init_app(app)
     login_manager.login_view = "login"  # a dónde redirigir si no está logueado
     login_manager.login_message = "Iniciá sesión para continuar."
@@ -689,6 +706,7 @@ def create_app():
 
             venta = Venta(
                 cliente_id=cliente_id,
+                usuario_id=current_user.id,
                 fecha=fecha_venta,
                 descripcion=descripcion,
                 monto=monto,
@@ -703,6 +721,7 @@ def create_app():
                 movimiento = MovimientoCC(
                     cliente_id=cliente_id,
                     venta_id=venta.id,
+                    usuario_id=current_user.id,
                     fecha=fecha_venta,
                     tipo="venta",
                     monto=monto,
@@ -861,6 +880,7 @@ def create_app():
 
         movimiento = MovimientoCC(
             cliente_id=cliente_id,
+            usuario_id=current_user.id,
             fecha=fecha_pago,
             tipo="pago",
             monto=monto,
@@ -1091,8 +1111,8 @@ def create_app():
         pdf.cell(0, 6, f"Generado el {hoy_argentina().strftime('%d/%m/%Y')} a las {datetime.now(ZONA_HORARIA).strftime('%H:%M')}", ln=1)
         pdf.ln(4)
 
-        anchos = [22, 16, 38, 50, 24, 26]
-        encabezados = ["Fecha", "Hora", "Cliente", "Descripcion", "Forma", "Monto"]
+        anchos = [18, 14, 26, 28, 30, 18, 20]
+        encabezados = ["Fecha", "Hora", "Cliente", "Usuario", "Descripcion", "Forma", "Monto"]
         pdf.set_font("Helvetica", "B", 9)
         pdf.set_fill_color(*verde)
         pdf.set_text_color(255, 255, 255)
@@ -1112,8 +1132,9 @@ def create_app():
             fila = [
                 venta.fecha.strftime("%d/%m/%Y"),
                 venta.creado.strftime("%H:%M"),
-                venta.cliente.nombre[:20],
-                (venta.descripcion or "Sin descripcion")[:28],
+                venta.cliente.nombre[:18],
+                (venta.usuario.username if venta.usuario else "Sistema")[:14],
+                (venta.descripcion or "Sin descripcion")[:26],
                 "Efectivo" if venta.forma_pago == "efectivo" else "Cta.Cte.",
                 f"${venta.monto:,.2f}",
             ]
@@ -1148,8 +1169,8 @@ def create_app():
         gris_texto = (90, 100, 110)
 
         pdf = FPDF()
-        anchos = [22, 16, 20, 46, 26, 28]
-        encabezados = ["Fecha", "Hora", "Tipo", "Descripcion", "Monto", "Saldo"]
+        anchos = [18, 14, 18, 24, 22, 20, 22]
+        encabezados = ["Fecha", "Hora", "Tipo", "Usuario", "Descripcion", "Monto", "Saldo"]
 
         for cliente in deudores:
             pdf.add_page()
@@ -1192,7 +1213,8 @@ def create_app():
                     m.fecha.strftime("%d/%m/%Y"),
                     m.creado.strftime("%H:%M"),
                     "Venta" if m.tipo == "venta" else "Pago",
-                    (m.descripcion or "Sin descripcion")[:26],
+                    (m.usuario.username if m.usuario else "Sistema")[:14],
+                    (m.descripcion or "Sin descripcion")[:22],
                     f"${m.monto:,.2f}",
                     f"${saldo_corrido:,.2f}",
                 ]
