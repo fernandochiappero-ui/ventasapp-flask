@@ -7,9 +7,16 @@
 
 from datetime import datetime, date
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
+
+ZONA_HORARIA = ZoneInfo("America/Argentina/Buenos_Aires")
+
+
+def ahora_argentina():
+    return datetime.now(ZONA_HORARIA).replace(tzinfo=None)
 
 
 class Usuario(UserMixin, db.Model):
@@ -53,7 +60,7 @@ class Cliente(db.Model):
     direccion = db.Column(db.String(200))
     notas = db.Column(db.String(300))
     activo = db.Column(db.Boolean, default=True, nullable=False)
-    creado = db.Column(db.DateTime, default=datetime.utcnow)
+    creado = db.Column(db.DateTime, default=ahora_argentina)
 
     # "relationship" no crea una columna: le dice a SQLAlchemy cómo
     # navegar de un Cliente a sus Ventas y Movimientos relacionados,
@@ -91,7 +98,7 @@ class Venta(db.Model):
     descripcion = db.Column(db.String(200))
     monto = db.Column(db.Float, nullable=False)
     forma_pago = db.Column(db.String(20), nullable=False)  # "efectivo" o "cuenta_corriente"
-    creado = db.Column(db.DateTime, default=datetime.utcnow)
+    creado = db.Column(db.DateTime, default=ahora_argentina)
     usuario = db.relationship("Usuario", foreign_keys=[usuario_id], backref="ventas_registradas")
 
 
@@ -115,7 +122,7 @@ class MovimientoCC(db.Model):
     tipo = db.Column(db.String(10), nullable=False)  # "venta" | "pago"
     monto = db.Column(db.Float, nullable=False)
     descripcion = db.Column(db.String(200))
-    creado = db.Column(db.DateTime, default=datetime.utcnow)
+    creado = db.Column(db.DateTime, default=ahora_argentina)
     usuario = db.relationship("Usuario", foreign_keys=[usuario_id], backref="movimientos_cc_registrados")
 
 
@@ -135,4 +142,4 @@ class ProductoAlmacen(db.Model):
     )
     precio_venta = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
     activo = db.Column(db.Boolean, nullable=False, default=True)
-    creado = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    creado = db.Column(db.DateTime, nullable=False, default=ahora_argentina)
