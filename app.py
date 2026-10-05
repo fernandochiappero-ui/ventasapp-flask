@@ -1181,7 +1181,7 @@ def create_app():
             pdf.ln(4)
 
             pdf.set_font("Helvetica", "B", 9)
-            pdf.set_fill_color(*verde)
+            pdf.set_fill_color(*rojo)
             pdf.set_text_color(255, 255, 255)
             for ancho, texto in zip(anchos, encabezados):
                 pdf.cell(ancho, 8, texto, border=0, fill=True)
