@@ -1067,9 +1067,8 @@ def create_app():
             .all()
         )
 
-        verde = (8, 125, 53)
-        rojo = (190, 30, 45)
-        verde_claro = (220, 239, 220)
+        verde = (190, 30, 45)
+        verde_claro = (250, 220, 222)
         gris_claro = (245, 246, 248)
         gris_texto = (90, 100, 110)
         
@@ -1077,7 +1076,7 @@ def create_app():
         pdf = FPDF()
         pdf.add_page()
 
-        pdf.set_fill_color(*rojo)
+        pdf.set_fill_color(*verde)
         pdf.rect(0, 0, 210, 26, "F")
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Helvetica", "B", 16)
