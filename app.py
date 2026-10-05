@@ -1147,7 +1147,7 @@ def create_app():
             [c for c in clientes if c.saldo > 0], key=lambda c: c.saldo, reverse=True
         )
 
-        vverde = (8, 125, 53)
+        verde = (8, 125, 53)
         rojo = (190, 30, 45)          # <-- nuevo
         ladrillo = (155, 48, 48)
         gris_claro = (245, 246, 248)
