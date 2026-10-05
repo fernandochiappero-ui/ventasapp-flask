@@ -1068,14 +1068,16 @@ def create_app():
         )
 
         verde = (8, 125, 53)
+        rojo = (190, 30, 45)
         verde_claro = (220, 239, 220)
         gris_claro = (245, 246, 248)
         gris_texto = (90, 100, 110)
+        
 
         pdf = FPDF()
         pdf.add_page()
 
-        pdf.set_fill_color(*verde)
+        pdf.set_fill_color(*rojo)
         pdf.rect(0, 0, 210, 26, "F")
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Helvetica", "B", 16)
@@ -1096,7 +1098,7 @@ def create_app():
         anchos = [18, 14, 26, 28, 30, 18, 20]
         encabezados = ["Fecha", "Hora", "Cliente", "Usuario", "Descripcion", "Forma", "Monto"]
         pdf.set_font("Helvetica", "B", 9)
-        pdf.set_fill_color(*verde)
+        pdf.set_fill_color(*rojo)
         pdf.set_text_color(255, 255, 255)
         for ancho, texto in zip(anchos, encabezados):
             pdf.cell(ancho, 8, texto, border=0, fill=True)
