@@ -61,7 +61,7 @@
   {% if ventas %}
     <a href="{{ url_for('reportes_pdf', desde=desde.isoformat(), hasta=hasta.isoformat()) }}"
        class="boton secundario" style="margin-bottom:10px;">⬇ Descargar PDF</a>
-    <div class="tabla-reportes-scroll">
+    <div class="tabla-reportes-scroll" id="tabla-ventas">
       <table class="reporte">
         <thead>
           <tr>
@@ -87,6 +87,20 @@
         </tbody>
       </table>
     </div>
+    </div>
+    <script>
+      (function () {
+        var caja = document.getElementById("tabla-ventas");
+        var filas = caja.querySelectorAll("tbody tr");
+        if (filas.length > 5) {
+          var encabezado = caja.querySelector("thead").offsetHeight;
+          var cincoFilas = filas[5].getBoundingClientRect().top
+                         - filas[0].getBoundingClientRect().top;
+          caja.style.maxHeight = (encabezado + cincoFilas + 2) + "px";
+        }
+      })();
+    </script>
+  {% else %}
   {% else %}
     <p class="vacio">No hay ventas para este rango.</p>
   {% endif %}
