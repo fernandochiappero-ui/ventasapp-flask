@@ -1067,8 +1067,9 @@ def create_app():
             .all()
         )
 
-        verde = (190, 30, 45)
-        verde_claro = (250, 220, 222)
+        verde = (8, 125, 53)
+        rojo = (190, 30, 45)
+        verde_claro = (220, 239, 220)
         gris_claro = (245, 246, 248)
         gris_texto = (90, 100, 110)
         
@@ -1076,7 +1077,7 @@ def create_app():
         pdf = FPDF()
         pdf.add_page()
 
-        pdf.set_fill_color(*verde)
+        pdf.set_fill_color(*rojo)
         pdf.rect(0, 0, 210, 26, "F")
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Helvetica", "B", 16)
@@ -1146,7 +1147,8 @@ def create_app():
             [c for c in clientes if c.saldo > 0], key=lambda c: c.saldo, reverse=True
         )
 
-        verde = (8, 125, 53)
+        vverde = (8, 125, 53)
+        rojo = (190, 30, 45)          # <-- nuevo
         ladrillo = (155, 48, 48)
         gris_claro = (245, 246, 248)
         gris_texto = (90, 100, 110)
@@ -1158,7 +1160,7 @@ def create_app():
         for cliente in deudores:
             pdf.add_page()
 
-            pdf.set_fill_color(*verde)
+            pdf.set_fill_color(*rojo)
             pdf.rect(0, 0, 210, 26, "F")
             pdf.set_text_color(255, 255, 255)
             pdf.set_font("Helvetica", "B", 16)
@@ -1166,7 +1168,7 @@ def create_app():
             pdf.cell(0, 8, "VERDULERIA EL GAUCHITO", ln=1)
             pdf.set_font("Helvetica", "B", 13)
             pdf.set_x(10)
-            pdf.set_text_color(0, 0, 0)
+            pdf.set_text_color(255, 255, 255)
             pdf.cell(0, 7, cliente.nombre, ln=1)
 
             pdf.set_xy(10, 32)
