@@ -519,14 +519,14 @@ def create_app():
                     ProductoAlmacen.id != producto.id,
                 ).first() if codigo else None
                 if codigo_existente:
-                if codigo_existente.activo:
+                    if codigo_existente.activo:
                     errores.append(
                         f"Ya existe otro producto con ese código: "
                         f"'{codigo_existente.nombre}' (id {codigo_existente.id})."
                     )
-                else:
-                    # Dado de baja: le liberamos el código para poder reutilizarlo
-                    codigo_existente.codigo = None
+                    else:
+                        # Dado de baja: le liberamos el código para poder reutilizarlo
+                        codigo_existente.codigo = None
 
             if errores:
                 for error in errores:
