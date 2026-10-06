@@ -990,7 +990,7 @@ def create_app():
     @administrador_requerido
     def reportes():
         hoy = hoy_argentina()
-        desde_str = request.args.get("desde", (hoy - timedelta(days=7)).isoformat())
+        desde_str = request.args.get("desde", hoy.isoformat())
         hasta_str = request.args.get("hasta", hoy.isoformat())
 
         desde = datetime.strptime(desde_str, "%Y-%m-%d").date()
@@ -1056,7 +1056,7 @@ def create_app():
     @administrador_requerido
     def reportes_pdf():
         hoy = hoy_argentina()
-        desde_str = request.args.get("desde", (hoy - timedelta(days=7)).isoformat())
+        desde_str = request.args.get("desde", hoy.isoformat())
         hasta_str = request.args.get("hasta", hoy.isoformat())
         desde = datetime.strptime(desde_str, "%Y-%m-%d").date()
         hasta = datetime.strptime(hasta_str, "%Y-%m-%d").date()
