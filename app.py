@@ -514,20 +514,16 @@ def create_app():
 
             if not nombre:
                 errores.append("El nombre del producto es obligatorio.")
-                codigo_existente = ProductoAlmacen.query.filter(
-                    ProductoAlmacen.codigo == codigo,
-                    ProductoAlmacen.id != producto.id,
-                ).first() if codigo else None
-                if codigo_existente:
-                    if codigo_existente.activo:
-                        errores.append(
-                            f"Ya existe otro producto con ese código: "
-                            f"'{codigo_existente.nombre}' (id {codigo_existente.id})."
-                        )
-                    else:
-                        # Dado de baja: le liberamos el código para poder reutilizarlo
-                        codigo_existente.codigo = None
-                        db.session.flush()
+
+            codigo_existente = ProductoAlmacen.query.filter(
+                ProductoAlmacen.codigo == codigo,
+                ProductoAlmacen.id != producto.id,
+            ).first() if codigo else None
+            if codigo_existente and codigo_existente.activo:
+                errores.append(
+                    f"Ya existe otro producto con ese código: "
+                    f"'{codigo_existente.nombre}' (id {codigo_existente.id})."
+                )
 
             if errores:
                 for error in errores:
@@ -538,6 +534,11 @@ def create_app():
                     mostrar_costos=True,
                 )
 
+            # Si el código lo tiene un producto dado de baja, se lo liberamos
+            if codigo_existente and not codigo_existente.activo:
+                codigo_existente.codigo = None
+                db.session.flush()
+
             producto.codigo = codigo
             producto.nombre = nombre
             producto.categoria = categoria or None
@@ -546,10 +547,10 @@ def create_app():
             producto.precio_costo = valores["precio_costo"]
             producto.porcentaje_ganancia = valores["porcentaje_ganancia"]
             if producto.precio_costo > 0:
-             producto.precio_venta = (
-             producto.precio_costo
-             * (Decimal("1") + producto.porcentaje_ganancia / Decimal("100"))
-             ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                producto.precio_venta = (
+                    producto.precio_costo
+                    * (Decimal("1") + producto.porcentaje_ganancia / Decimal("100"))
+                ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
             db.session.commit()
             flash(f"Producto '{producto.nombre}' actualizado.", "success")
