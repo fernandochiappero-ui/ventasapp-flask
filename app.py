@@ -527,6 +527,7 @@ def create_app():
                     else:
                         # Dado de baja: le liberamos el código para poder reutilizarlo
                         codigo_existente.codigo = None
+                        db.session.flush()
 
             if errores:
                 for error in errores:
