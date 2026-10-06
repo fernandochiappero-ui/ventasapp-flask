@@ -514,12 +514,19 @@ def create_app():
 
             if not nombre:
                 errores.append("El nombre del producto es obligatorio.")
-            codigo_existente = ProductoAlmacen.query.filter(
-                ProductoAlmacen.codigo == codigo,
-                ProductoAlmacen.id != producto.id,
-            ).first() if codigo else None
-            if codigo_existente:
-                errores.append("Ya existe otro producto con ese código.")
+                codigo_existente = ProductoAlmacen.query.filter(
+                    ProductoAlmacen.codigo == codigo,
+                    ProductoAlmacen.id != producto.id,
+                ).first() if codigo else None
+                if codigo_existente:
+                if codigo_existente.activo:
+                    errores.append(
+                        f"Ya existe otro producto con ese código: "
+                        f"'{codigo_existente.nombre}' (id {codigo_existente.id})."
+                    )
+                else:
+                    # Dado de baja: le liberamos el código para poder reutilizarlo
+                    codigo_existente.codigo = None
 
             if errores:
                 for error in errores:
