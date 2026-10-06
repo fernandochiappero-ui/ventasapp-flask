@@ -28,7 +28,7 @@
   </form>
   {% endif %}
 
-  <div class="tarjeta tabla-productos-contenedor">
+  <div class="tarjeta tabla-productos-contenedor {{ 'productos-resultados-scroll' if modo == 'buscar' else '' }}">
     {% if productos %}
     {% if modo == 'buscar' and current_user.es_vendedor %}
     <div class="productos-vendedor-lista">
