@@ -538,9 +538,12 @@ def create_app():
             producto.precio_costo = valores["precio_costo"]
             producto.porcentaje_ganancia = valores["porcentaje_ganancia"]
             producto.precio_venta = (
-                producto.precio_costo
-                * (Decimal("1") + producto.porcentaje_ganancia / Decimal("100"))
-            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            if producto.precio_costo > 0:
+             producto.precio_venta = (
+             producto.precio_costo
+             * (Decimal("1") + producto.porcentaje_ganancia / Decimal("100"))
+             ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
             db.session.commit()
             flash(f"Producto '{producto.nombre}' actualizado.", "success")
             return redirect(url_for("buscar_productos_almacen", q=producto.nombre))
