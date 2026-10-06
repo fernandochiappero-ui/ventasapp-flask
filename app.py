@@ -537,7 +537,6 @@ def create_app():
             producto.stock = valores["stock"]
             producto.precio_costo = valores["precio_costo"]
             producto.porcentaje_ganancia = valores["porcentaje_ganancia"]
-            producto.precio_venta = (
             if producto.precio_costo > 0:
              producto.precio_venta = (
              producto.precio_costo
