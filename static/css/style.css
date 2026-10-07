@@ -1069,3 +1069,16 @@ input[type="search"] {
   padding: 0 24px;
   flex-shrink: 0;
 }
+
+@media (min-width: 860px) {
+  nav.tabs {
+    flex-wrap: nowrap;
+    padding: 0 6px;
+  }
+  nav.tabs a {
+    padding: 10px 9px;
+    gap: 5px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+}
