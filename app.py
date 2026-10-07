@@ -17,6 +17,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import BytesIO
 from zoneinfo import ZoneInfo
 import os
+import unicodedata
 
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, send_file
 from fpdf import FPDF
@@ -30,6 +31,12 @@ from models import Usuario, Cliente, Venta, MovimientoCC, ProductoAlmacen
 
 ZONA_HORARIA = ZoneInfo("America/Argentina/Buenos_Aires")
 def hoy_argentina(): return datetime.now(ZONA_HORARIA).date()
+
+def normalizar(texto):
+    """Minúsculas y sin tildes: 'Orégano' -> 'oregano'."""
+    texto = unicodedata.normalize("NFD", texto or "")
+    sin_tildes = "".join(c for c in texto if unicodedata.category(c) != "Mn")
+    return sin_tildes.casefold()
 
 def create_app():
     app = Flask(__name__)
@@ -578,28 +585,38 @@ def create_app():
         if not termino:
             return jsonify({"productos": []})
 
-        consulta = ProductoAlmacen.query.filter(ProductoAlmacen.activo.is_(True))
-        for palabra in termino.split():
-            consulta = consulta.filter(ProductoAlmacen.nombre.ilike(f"%{palabra}%"))
-        productos = consulta.order_by(ProductoAlmacen.nombre).limit(30).all()
-        return jsonify({"productos": [producto.nombre for producto in productos]})
+        palabras = [normalizar(p) for p in termino.split()]
+        productos = (
+            ProductoAlmacen.query.filter(ProductoAlmacen.activo.is_(True))
+            .order_by(ProductoAlmacen.nombre)
+            .all()
+        )
+        coinciden = [
+            p.nombre for p in productos
+            if all(palabra in normalizar(p.nombre) for palabra in palabras)
+        ]
+        return jsonify({"productos": coinciden[:30]})
 
     @app.route("/productos/almacen/buscar")
     @login_required
     def buscar_productos_almacen():
         busqueda = request.args.get("q", "").strip()
-        consulta = ProductoAlmacen.query.filter_by(activo=True)
-        for palabra in busqueda.split():
-            patron = f"%{palabra}%"
-            consulta = consulta.filter(
-                or_(
-                    ProductoAlmacen.nombre.ilike(patron),
-                    ProductoAlmacen.codigo.ilike(patron),
-                    ProductoAlmacen.categoria.ilike(patron),
-                    ProductoAlmacen.descripcion.ilike(patron),
+        productos = (
+            ProductoAlmacen.query.filter_by(activo=True)
+            .order_by(ProductoAlmacen.nombre)
+            .all()
+        )
+        palabras = [normalizar(p) for p in busqueda.split()]
+        if palabras:
+            productos = [
+                p for p in productos
+                if all(
+                    palabra in normalizar(
+                        " ".join(filter(None, [p.nombre, p.codigo, p.categoria, p.descripcion]))
+                    )
+                    for palabra in palabras
                 )
-            )
-        productos = consulta.order_by(ProductoAlmacen.nombre).all()
+            ]
         return render_template(
             "productos/list.html",
             productos=productos,
