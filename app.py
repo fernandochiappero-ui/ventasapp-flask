@@ -571,36 +571,19 @@ def create_app():
         flash(f"Producto '{producto.nombre}' dado de baja.", "success")
         return redirect(url_for("buscar_productos_almacen"))
 
-    @app.route("/productos/almacen/sugerencias")
-    @login_required
-    def sugerencias_productos_almacen():
-        termino = request.args.get("q", "").strip()
-        if not termino:
-            return jsonify({"productos": []})
-
-        productos = (
-            ProductoAlmacen.query.filter(
-                ProductoAlmacen.activo.is_(True),
-                ProductoAlmacen.nombre.ilike(f"%{termino}%"),
-            )
-            .order_by(ProductoAlmacen.nombre)
-            .limit(30)
-            .all()
-        )
-        return jsonify({"productos": [producto.nombre for producto in productos]})
-
     @app.route("/productos/almacen/buscar")
     @login_required
     def buscar_productos_almacen():
         busqueda = request.args.get("q", "").strip()
         consulta = ProductoAlmacen.query.filter_by(activo=True)
-        if busqueda:
-            patron = f"%{busqueda}%"
+        for palabra in busqueda.split():
+            patron = f"%{palabra}%"
             consulta = consulta.filter(
                 or_(
                     ProductoAlmacen.nombre.ilike(patron),
                     ProductoAlmacen.codigo.ilike(patron),
                     ProductoAlmacen.categoria.ilike(patron),
+                    ProductoAlmacen.descripcion.ilike(patron),
                 )
             )
         productos = consulta.order_by(ProductoAlmacen.nombre).all()
