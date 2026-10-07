@@ -90,14 +90,14 @@
           <a href="{{ url_for('imprimir_lista_precios') }}">Imprimir Lista de Precios</a>
         </div>
       </div>
-      <div class="menu-desplegable">
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nuevo_producto_verduleria','buscar_productos_verduleria','imprimir_lista_precios_verduleria','editar_producto_verduleria'] }}">
         <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
           <span class="icono">🥬</span>Productos de Verdulería
         </a>
         <div class="submenu">
-          <a href="#">Agregar Productos</a>
-          <a href="#">Buscar</a>
-          <a href="#">Imprimir Lista de Precios</a>
+          <a href="{{ url_for('nuevo_producto_verduleria') }}">Agregar Productos</a>
+          <a href="{{ url_for('buscar_productos_verduleria') }}">Buscar</a>
+          <a href="{{ url_for('imprimir_lista_precios_verduleria') }}">Imprimir Lista de Precios</a>
         </div>
       </div>
     </nav>
