@@ -143,3 +143,21 @@ class ProductoAlmacen(db.Model):
     precio_venta = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado = db.Column(db.DateTime, nullable=False, default=ahora_argentina)
+
+class ProductoVerduleria(db.Model):
+    """Producto y existencias del inventario de verduleria."""
+    __tablename__ = "productos_verduleria"
+
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(40), unique=True, nullable=True)
+    nombre = db.Column(db.String(150), nullable=False, index=True)
+    categoria = db.Column(db.String(100))
+    descripcion = db.Column(db.String(300))
+    stock = db.Column(db.Numeric(12, 3), nullable=False, default=Decimal("0"))
+    precio_costo = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
+    porcentaje_ganancia = db.Column(
+        db.Numeric(6, 2), nullable=False, default=Decimal("0")
+    )
+    precio_venta = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
+    activo = db.Column(db.Boolean, nullable=False, default=True)
+    creado = db.Column(db.DateTime, nullable=False, default=ahora_argentina)

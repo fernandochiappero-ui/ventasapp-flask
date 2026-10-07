@@ -27,7 +27,7 @@ from flask_login import (
 from functools import wraps
 from sqlalchemy import inspect, or_, text
 from extensions import db, login_manager
-from models import Usuario, Cliente, Venta, MovimientoCC, ProductoAlmacen
+from models import Usuario, Cliente, Venta, MovimientoCC, ProductoAlmacen, ProductoVerduleria
 
 ZONA_HORARIA = ZoneInfo("America/Argentina/Buenos_Aires")
 def hoy_argentina(): return datetime.now(ZONA_HORARIA).date()
@@ -635,6 +635,239 @@ def create_app():
         )
         return render_template(
             "productos/list.html",
+            productos=productos,
+            busqueda="",
+            modo="precios",
+            mostrar_costos=False,
+        )
+
+    # ------------------------------------------------------------------
+    # PRODUCTOS DE VERDULERIA
+    # ------------------------------------------------------------------
+
+    @app.route("/productos/verduleria/nuevo", methods=["GET", "POST"])
+    @login_required
+    def nuevo_producto_verduleria():
+        mostrar_costos = current_user.es_administrador
+        if request.method == "POST":
+            codigo = request.form.get("codigo", "").strip().upper() or None
+            nombre = request.form.get("nombre", "").strip()
+            categoria = request.form.get("categoria", "").strip()
+            descripcion = request.form.get("descripcion", "").strip()
+            errores = []
+
+            valores = {}
+            campos_numericos = [("stock", "stock")]
+            if mostrar_costos:
+                campos_numericos.extend(
+                    [
+                        ("precio_costo", "precio de costo"),
+                        ("porcentaje_ganancia", "porcentaje de ganancia"),
+                    ]
+                )
+            else:
+                campos_numericos.append(("precio_venta", "precio de venta"))
+
+            for campo, etiqueta in campos_numericos:
+                texto = request.form.get(campo, "0").strip().replace(",", ".")
+                try:
+                    valor = Decimal(texto or "0")
+                    if not valor.is_finite() or valor < 0:
+                        raise InvalidOperation
+                    if campo == "porcentaje_ganancia" and valor > 10000:
+                        raise InvalidOperation
+                    valores[campo] = valor
+                except InvalidOperation:
+                    errores.append(f"El {etiqueta} debe ser un número igual o mayor a cero.")
+
+            if not nombre:
+                errores.append("El nombre del producto es obligatorio.")
+            if codigo and ProductoVerduleria.query.filter_by(codigo=codigo).first():
+                errores.append("Ya existe un producto con ese código.")
+
+            if errores:
+                for error in errores:
+                    flash(error, "error")
+                return render_template(
+                    "productos/form_verduleria.html", mostrar_costos=mostrar_costos
+                )
+
+            if mostrar_costos:
+                precio_costo = valores["precio_costo"]
+                porcentaje_ganancia = valores["porcentaje_ganancia"]
+                precio_venta = (
+                    precio_costo * (Decimal("1") + porcentaje_ganancia / Decimal("100"))
+                ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            else:
+                precio_costo = Decimal("0")
+                porcentaje_ganancia = Decimal("0")
+                precio_venta = valores["precio_venta"]
+
+            producto = ProductoVerduleria(
+                codigo=codigo,
+                nombre=nombre,
+                categoria=categoria or None,
+                descripcion=descripcion or None,
+                stock=valores["stock"],
+                precio_costo=precio_costo,
+                porcentaje_ganancia=porcentaje_ganancia,
+                precio_venta=precio_venta,
+            )
+            db.session.add(producto)
+            db.session.commit()
+            flash(f"Producto '{producto.nombre}' agregado a verdulería.", "success")
+            return redirect(url_for("buscar_productos_verduleria", q=producto.nombre))
+
+        return render_template(
+            "productos/form_verduleria.html", mostrar_costos=mostrar_costos
+        )
+
+    @app.route("/productos/verduleria/<int:producto_id>/editar", methods=["GET", "POST"])
+    @administrador_requerido
+    def editar_producto_verduleria(producto_id):
+        producto = ProductoVerduleria.query.filter_by(
+            id=producto_id, activo=True
+        ).first_or_404()
+
+        if request.method == "POST":
+            codigo = request.form.get("codigo", "").strip().upper() or None
+            nombre = request.form.get("nombre", "").strip()
+            categoria = request.form.get("categoria", "").strip()
+            descripcion = request.form.get("descripcion", "").strip()
+            errores = []
+            valores = {}
+
+            for campo, etiqueta in (
+                ("stock", "stock"),
+                ("precio_costo", "precio de costo"),
+                ("porcentaje_ganancia", "porcentaje de ganancia"),
+            ):
+                texto = request.form.get(campo, "").strip().replace(",", ".")
+                try:
+                    valor = Decimal(texto)
+                    if not valor.is_finite() or valor < 0:
+                        raise InvalidOperation
+                    if campo == "porcentaje_ganancia" and valor > 10000:
+                        raise InvalidOperation
+                    valores[campo] = valor
+                except InvalidOperation:
+                    errores.append(f"El {etiqueta} debe ser un número igual o mayor a cero.")
+
+            if not nombre:
+                errores.append("El nombre del producto es obligatorio.")
+
+            codigo_existente = ProductoVerduleria.query.filter(
+                ProductoVerduleria.codigo == codigo,
+                ProductoVerduleria.id != producto.id,
+            ).first() if codigo else None
+            if codigo_existente and codigo_existente.activo:
+                errores.append(
+                    f"Ya existe otro producto con ese código: "
+                    f"'{codigo_existente.nombre}' (id {codigo_existente.id})."
+                )
+
+            if errores:
+                for error in errores:
+                    flash(error, "error")
+                return render_template(
+                    "productos/form_verduleria.html",
+                    producto=producto,
+                    mostrar_costos=True,
+                )
+
+            if codigo_existente and not codigo_existente.activo:
+                codigo_existente.codigo = None
+                db.session.flush()
+
+            producto.codigo = codigo
+            producto.nombre = nombre
+            producto.categoria = categoria or None
+            producto.descripcion = descripcion or None
+            producto.stock = valores["stock"]
+            producto.precio_costo = valores["precio_costo"]
+            producto.porcentaje_ganancia = valores["porcentaje_ganancia"]
+            if producto.precio_costo > 0:
+                producto.precio_venta = (
+                    producto.precio_costo
+                    * (Decimal("1") + producto.porcentaje_ganancia / Decimal("100"))
+                ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+            db.session.commit()
+            flash(f"Producto '{producto.nombre}' actualizado.", "success")
+            return redirect(url_for("buscar_productos_verduleria", q=producto.nombre))
+
+        return render_template(
+            "productos/form_verduleria.html", producto=producto, mostrar_costos=True
+        )
+
+    @app.route("/productos/verduleria/<int:producto_id>/eliminar", methods=["POST"])
+    @administrador_requerido
+    def eliminar_producto_verduleria(producto_id):
+        producto = ProductoVerduleria.query.filter_by(
+            id=producto_id, activo=True
+        ).first_or_404()
+        producto.activo = False
+        db.session.commit()
+        flash(f"Producto '{producto.nombre}' dado de baja.", "success")
+        return redirect(url_for("buscar_productos_verduleria"))
+
+    @app.route("/productos/verduleria/sugerencias")
+    @login_required
+    def sugerencias_productos_verduleria():
+        termino = request.args.get("q", "").strip()
+        if not termino:
+            return jsonify({"productos": []})
+
+        palabras = [normalizar(p) for p in termino.split()]
+        productos = (
+            ProductoVerduleria.query.filter(ProductoVerduleria.activo.is_(True))
+            .order_by(ProductoVerduleria.nombre)
+            .all()
+        )
+        coinciden = [
+            p.nombre for p in productos
+            if all(palabra in normalizar(p.nombre) for palabra in palabras)
+        ]
+        return jsonify({"productos": coinciden[:30]})
+
+    @app.route("/productos/verduleria/buscar")
+    @login_required
+    def buscar_productos_verduleria():
+        busqueda = request.args.get("q", "").strip()
+        productos = (
+            ProductoVerduleria.query.filter_by(activo=True)
+            .order_by(ProductoVerduleria.nombre)
+            .all()
+        )
+        palabras = [normalizar(p) for p in busqueda.split()]
+        if palabras:
+            productos = [
+                p for p in productos
+                if all(
+                    palabra in normalizar(
+                        " ".join(filter(None, [p.nombre, p.codigo, p.categoria, p.descripcion]))
+                    )
+                    for palabra in palabras
+                )
+            ]
+        return render_template(
+            "productos/list_verduleria.html",
+            productos=productos,
+            busqueda=busqueda,
+            modo="buscar",
+            mostrar_costos=current_user.es_administrador,
+        )
+
+    @app.route("/productos/verduleria/lista-precios")
+    @login_required
+    def imprimir_lista_precios_verduleria():
+        productos = (
+            ProductoVerduleria.query.filter_by(activo=True)
+            .order_by(ProductoVerduleria.nombre)
+            .all()
+        )
+        return render_template(
+            "productos/list_verduleria.html",
             productos=productos,
             busqueda="",
             modo="precios",
