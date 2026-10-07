@@ -2,7 +2,7 @@
 {% set editando = producto is defined and producto %}
 {% block titulo %}{{ 'Editar producto' if editando else 'Agregar producto' }}{% endblock %}
 {% block contenido %}
-<h1>{{ 'Editar producto' if editando else 'Agregar producto al verduleria' }}</h1>
+<h1>{{ 'Editar producto' if editando else 'Agregar producto a Verduleria' }}</h1>
 
 <form method="POST" class="tarjeta formulario-producto">
   <label for="codigo">Código</label>
@@ -18,7 +18,7 @@
          value="{{ request.form.get('categoria', producto.categoria if editando else '') }}" placeholder="Ej.: bebidas, limpieza">
 
   <label for="descripcion">Descripción</label>
-       <textarea id="descripcion" name="descripcion" maxlength="300">{{ request.form.get('descripcion', producto.descripcion if editando else '') }}</textarea>
+  <textarea id="descripcion" name="descripcion" maxlength="300">{{ request.form.get('descripcion', producto.descripcion if editando else '') }}</textarea>
 
   <div class="campos-producto-numericos">
     <div>
@@ -26,39 +26,73 @@
       <input type="number" id="stock" name="stock" min="0" step="0.001"
              value="{{ request.form.get('stock', producto.stock if editando else '0') }}" required>
     </div>
-              {% if mostrar_costos %}
+    {% if mostrar_costos %}
     <div>
       <label for="precio_costo">Precio de costo *</label>
       <input type="number" id="precio_costo" name="precio_costo" min="0" step="0.01"
              value="{{ request.form.get('precio_costo', producto.precio_costo if editando else '0') }}" required>
     </div>
-              <div>
-                     <label for="porcentaje_ganancia">Porcentaje de ganancia *</label>
-                     <div class="campo-porcentaje">
-                            <input type="number" id="porcentaje_ganancia" name="porcentaje_ganancia"
-                                                  min="0" max="10000" step="0.01"
-                                                  value="{{ request.form.get('porcentaje_ganancia', producto.porcentaje_ganancia if editando else '30') }}" required>
-                            <span>%</span>
-                     </div>
-              </div>
-              <div>
-                     <label for="precio_venta_calculado">Precio de venta calculado</label>
-                     <input type="number" id="precio_venta_calculado" step="0.01"
-                                           value="{{ request.form.get('precio_venta_calculado', producto.precio_venta if editando else '0.00') }}" readonly>
-              </div>
-              {% else %}
+    <div>
+      <label for="porcentaje_ganancia">Porcentaje de ganancia *</label>
+      <div class="campo-porcentaje">
+        <input type="number" id="porcentaje_ganancia" name="porcentaje_ganancia"
+               min="0" max="10000" step="0.01"
+               value="{{ request.form.get('porcentaje_ganancia', producto.porcentaje_ganancia if editando else '30') }}" required>
+        <span>%</span>
+      </div>
+    </div>
+    <div>
+      <label for="precio_venta_calculado">Precio de venta final</label>
+      <input type="number" id="precio_venta_calculado" name="precio_venta"
+             min="0" step="0.01"
+             value="{{ request.form.get('precio_venta', producto.precio_venta if editando else '0.00') }}">
+      <div style="display:flex; gap:6px; margin-top:6px;">
+        <select id="redondeo" aria-label="Redondear a">
+          <option value="1">a $1</option>
+          <option value="5">a $5</option>
+          <option value="10" selected>a $10</option>
+          <option value="50">a $50</option>
+          <option value="100">a $100</option>
+        </select>
+        <button type="button" id="btn-redondear" class="boton secundario">Redondear</button>
+      </div>
+    </div>
+    {% else %}
     <div>
       <label for="precio_venta">Precio de venta *</label>
       <input type="number" id="precio_venta" name="precio_venta" min="0" step="0.01"
              value="{{ request.form.get('precio_venta', '0') }}" required>
     </div>
-              {% endif %}
+    {% endif %}
   </div>
 
-       {% if mostrar_costos %}
-       <p class="ayuda-formulario">El precio se calcula como costo + el porcentaje de ganancia seleccionado.</p>
-       {% endif %}
+  {% if mostrar_costos %}
+  <p class="ayuda-formulario">El precio se calcula como costo + porcentaje. También podés escribir el precio final y el porcentaje se ajusta solo.</p>
+  {% endif %}
 
-       <button type="submit" class="ancho verde">{{ 'Guardar cambios' if editando else 'Guardar producto' }}</button>
+  <button type="submit" class="ancho verde">{{ 'Guardar cambios' if editando else 'Guardar producto' }}</button>
 </form>
+
+<script>
+  (function () {
+    var costo = document.getElementById("precio_costo");
+    var pct = document.getElementById("porcentaje_ganancia");
+    var precio = document.getElementById("precio_venta_calculado");
+    var paso = document.getElementById("redondeo");
+    var btn = document.getElementById("btn-redondear");
+    if (!costo || !pct || !precio) return;
+
+    function actualizarPorcentaje() {
+      var c = parseFloat(costo.value), p = parseFloat(precio.value);
+      if (c > 0 && !isNaN(p)) pct.value = ((p / c - 1) * 100).toFixed(2);
+    }
+    precio.addEventListener("input", actualizarPorcentaje);
+    btn.addEventListener("click", function () {
+      var p = parseFloat(precio.value), n = parseFloat(paso.value);
+      if (isNaN(p) || isNaN(n)) return;
+      precio.value = (Math.round(p / n) * n).toFixed(2);
+      actualizarPorcentaje();
+    });
+  })();
+</script>
 {% endblock %}
