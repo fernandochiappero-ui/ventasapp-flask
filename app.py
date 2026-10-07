@@ -38,6 +38,35 @@ def normalizar(texto):
     sin_tildes = "".join(c for c in texto if unicodedata.category(c) != "Mn")
     return sin_tildes.casefold()
 
+def resolver_precio(costo, porcentaje, precio_texto):
+    """Devuelve (porcentaje, precio_venta, error)."""
+    cien = Decimal("100")
+    centavo = Decimal("0.01")
+    calculado = (costo * (Decimal("1") + porcentaje / cien)).quantize(
+        centavo, rounding=ROUND_HALF_UP
+    )
+    precio_texto = (precio_texto or "").strip().replace(",", ".")
+    if not precio_texto:
+        return porcentaje, calculado, None
+    try:
+        precio = Decimal(precio_texto)
+        if not precio.is_finite() or precio < 0:
+            raise InvalidOperation
+    except InvalidOperation:
+        return porcentaje, calculado, "El precio de venta debe ser un número igual o mayor a cero."
+    precio = precio.quantize(centavo, rounding=ROUND_HALF_UP)
+    if costo <= 0 or precio == calculado:
+        # sin costo no se puede calcular el %; o no tocó el precio
+        return porcentaje, precio, None
+    nuevo = ((precio / costo - Decimal("1")) * cien).quantize(
+        centavo, rounding=ROUND_HALF_UP
+    )
+    if nuevo < 0:
+        return porcentaje, precio, "El precio de venta no puede ser menor al costo."
+    if nuevo > 9999:
+        return porcentaje, precio, "El precio de venta es demasiado alto para ese costo."
+    return nuevo, precio, None
+
 def create_app():
     app = Flask(__name__)
 
@@ -451,6 +480,16 @@ def create_app():
             if codigo and ProductoAlmacen.query.filter_by(codigo=codigo).first():
                 errores.append("Ya existe un producto con ese código.")
 
+            porcentaje_final = precio_final = None
+            if "precio_costo" in valores and "porcentaje_ganancia" in valores:
+                porcentaje_final, precio_final, error_precio = resolver_precio(
+                    valores["precio_costo"],
+                    valores["porcentaje_ganancia"],
+                    request.form.get("precio_venta"),
+                )
+                if error_precio:
+                    errores.append(error_precio)
+
             if errores:
                 for error in errores:
                     flash(error, "error")
@@ -460,10 +499,8 @@ def create_app():
 
             if mostrar_costos:
                 precio_costo = valores["precio_costo"]
-                porcentaje_ganancia = valores["porcentaje_ganancia"]
-                precio_venta = (
-                    precio_costo * (Decimal("1") + porcentaje_ganancia / Decimal("100"))
-                ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                porcentaje_ganancia = porcentaje_final
+                precio_venta = precio_final
             else:
                 precio_costo = Decimal("0")
                 porcentaje_ganancia = Decimal("0")
@@ -531,6 +568,17 @@ def create_app():
                     f"Ya existe otro producto con ese código: "
                     f"'{codigo_existente.nombre}' (id {codigo_existente.id})."
                 )
+        
+            porcentaje_final = precio_final = None
+            if "precio_costo" in valores and "porcentaje_ganancia" in valores:
+                porcentaje_final, precio_final, error_precio = resolver_precio(
+                    valores["precio_costo"],
+                    valores["porcentaje_ganancia"],
+                    request.form.get("precio_venta"),
+                )
+                if error_precio:
+                    errores.append(error_precio)
+
 
             if errores:
                 for error in errores:
@@ -552,12 +600,8 @@ def create_app():
             producto.descripcion = descripcion or None
             producto.stock = valores["stock"]
             producto.precio_costo = valores["precio_costo"]
-            producto.porcentaje_ganancia = valores["porcentaje_ganancia"]
-            if producto.precio_costo > 0:
-                producto.precio_venta = (
-                    producto.precio_costo
-                    * (Decimal("1") + producto.porcentaje_ganancia / Decimal("100"))
-                ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            producto.porcentaje_ganancia = porcentaje_final
+            producto.precio_venta = precio_final
 
             db.session.commit()
             flash(f"Producto '{producto.nombre}' actualizado.", "success")
@@ -685,6 +729,17 @@ def create_app():
             if codigo and ProductoVerduleria.query.filter_by(codigo=codigo).first():
                 errores.append("Ya existe un producto con ese código.")
 
+            porcentaje_final = precio_final = None
+            if "precio_costo" in valores and "porcentaje_ganancia" in valores:
+                porcentaje_final, precio_final, error_precio = resolver_precio(
+                    valores["precio_costo"],
+                    valores["porcentaje_ganancia"],
+                    request.form.get("precio_venta"),
+                )
+                if error_precio:
+                    errores.append(error_precio)
+
+        
             if errores:
                 for error in errores:
                     flash(error, "error")
@@ -694,10 +749,8 @@ def create_app():
 
             if mostrar_costos:
                 precio_costo = valores["precio_costo"]
-                porcentaje_ganancia = valores["porcentaje_ganancia"]
-                precio_venta = (
-                    precio_costo * (Decimal("1") + porcentaje_ganancia / Decimal("100"))
-                ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                porcentaje_ganancia = porcentaje_final
+                precio_venta = precio_final
             else:
                 precio_costo = Decimal("0")
                 porcentaje_ganancia = Decimal("0")
@@ -766,6 +819,16 @@ def create_app():
                     f"'{codigo_existente.nombre}' (id {codigo_existente.id})."
                 )
 
+            porcentaje_final = precio_final = None
+            if "precio_costo" in valores and "porcentaje_ganancia" in valores:
+                porcentaje_final, precio_final, error_precio = resolver_precio(
+                    valores["precio_costo"],
+                    valores["porcentaje_ganancia"],
+                    request.form.get("precio_venta"),
+                )
+                if error_precio:
+                    errores.append(error_precio)
+
             if errores:
                 for error in errores:
                     flash(error, "error")
@@ -785,12 +848,8 @@ def create_app():
             producto.descripcion = descripcion or None
             producto.stock = valores["stock"]
             producto.precio_costo = valores["precio_costo"]
-            producto.porcentaje_ganancia = valores["porcentaje_ganancia"]
-            if producto.precio_costo > 0:
-                producto.precio_venta = (
-                    producto.precio_costo
-                    * (Decimal("1") + producto.porcentaje_ganancia / Decimal("100"))
-                ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            producto.porcentaje_ganancia = porcentaje_final
+            producto.precio_venta = precio_final
 
             db.session.commit()
             flash(f"Producto '{producto.nombre}' actualizado.", "success")
