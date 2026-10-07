@@ -82,6 +82,11 @@
     var btn = document.getElementById("btn-redondear");
     if (!costo || !pct || !precio) return;
 
+    var precioOriginal = precio.value;
+    window.addEventListener("load", function () {
+      precio.value = precioOriginal;
+    });
+
     function actualizarPorcentaje() {
       var c = parseFloat(costo.value), p = parseFloat(precio.value);
       if (c > 0 && !isNaN(p)) pct.value = ((p / c - 1) * 100).toFixed(2);
