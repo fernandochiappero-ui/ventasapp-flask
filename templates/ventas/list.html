@@ -41,7 +41,7 @@
           <td>{{ venta.cliente.nombre }}</td>
           <td>{{ venta.usuario.username if venta.usuario else 'Sistema' }}</td>
           <td>{{ venta.descripcion or 'Sin descripción' }}</td>
-          <td>{{ 'Efectivo' if venta.forma_pago == 'efectivo' else 'Cta. Cte.' }}</td>
+          <td>{{ FORMAS_PAGO.get(venta.forma_pago, venta.forma_pago) }}</td>
           <td class="num cifra">${{ "%.2f"|format(venta.monto) }}</td>
           <td class="acciones-venta">
             <a href="{{ url_for('editar_venta', venta_id=venta.id) }}" class="boton secundario chico">✎ Editar</a>

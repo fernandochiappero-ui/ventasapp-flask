@@ -1045,6 +1045,7 @@ def create_app():
 
     @app.route("/ventas/<int:venta_id>/editar", methods=["GET", "POST"])
     @administrador_requerido
+    
     def editar_venta(venta_id):
         venta = db.get_or_404(Venta, venta_id)
         clientes = Cliente.query.filter_by(activo=True).order_by(Cliente.nombre).all()
@@ -1362,6 +1363,8 @@ def create_app():
             total_ventas=total_ventas,
             total_efectivo=total_efectivo,
             total_cuenta=total_cuenta,
+            total_tarjeta=total_tarjeta,
+            total_transferencia=total_transferencia,
             total_tarjeta=total_tarjeta,
             total_transferencia=total_transferencia,
             ventas=ventas,

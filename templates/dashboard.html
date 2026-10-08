@@ -16,6 +16,14 @@
     <div class="etiqueta">A cuenta corriente</div>
     <div class="valor cifra">${{ "%.2f"|format(cuenta_hoy) }}</div>
   </div>
+  <div class="tarjeta metrica">
+    <div class="etiqueta">Tarjeta / QR</div>
+    <div class="valor cifra">${{ "%.2f"|format(tarjeta_hoy) }}</div>
+  </div>
+  <div class="tarjeta metrica">
+    <div class="etiqueta">Transferencia</div>
+    <div class="valor cifra">${{ "%.2f"|format(transferencia_hoy) }}</div>
+  </div>
   <div class="tarjeta metrica ladrillo">
     <div class="etiqueta">Deuda total ({{ cantidad_deudores }} clientes)</div>
     <div class="valor cifra">${{ "%.2f"|format(deuda_total) }}</div>
@@ -31,9 +39,9 @@
       <div class="renglon">
         <div>
           <div class="principal">{{ v.cliente.nombre }}</div>
-          <div class="secundario">{{ v.descripcion or 'Sin descripción' }}</div>
+          <div class="secundario">{{ FORMAS_PAGO.get(v.forma_pago, v.forma_pago) }} · {{ v.descripcion or 'Sin descripción' }}</div>
         </div>
-        <div class="monto cifra {{ 'verde' if v.forma_pago == 'efectivo' else 'ladrillo' }}">
+        <div class="monto cifra {{ 'ladrillo' if v.forma_pago == 'cuenta_corriente' else 'verde' }}">
           ${{ "%.2f"|format(v.monto) }}
         </div>
       </div>
