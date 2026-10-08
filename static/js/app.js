@@ -16,13 +16,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const costo = Number(campoCostoProducto.value.replace(",", "."));
       const porcentaje = Number(campoPorcentajeProducto.value.replace(",", "."));
       const precio = costo * (1 + porcentaje / 100);
-      campoPrecioCalculado.value = Number.isFinite(precio) ? precio.toFixed(2) : "0.00";
+      // Con costo 0 no se puede calcular: se conserva el precio que ya tiene
+      if (costo > 0 && Number.isFinite(precio)) {
+        campoPrecioCalculado.value = precio.toFixed(2);
+      }
     };
 
     campoCostoProducto.addEventListener("input", calcularPrecioProducto);
     campoPorcentajeProducto.addEventListener("input", calcularPrecioProducto);
-    calcularPrecioProducto();
-  }
+    // Sin llamar a calcularPrecioProducto() al cargar: así no pisa el precio guardado
+  } 
 
   const avisoPago = document.getElementById("aviso-pago");
   if (avisoPago) {
