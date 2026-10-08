@@ -67,9 +67,24 @@ def resolver_precio(costo, porcentaje, precio_texto):
         return porcentaje, precio, "El precio de venta es demasiado alto para ese costo."
     return nuevo, precio, None
 
+FORMAS_PAGO = {
+    "efectivo": "Efectivo",
+    "cuenta_corriente": "Cta. Cte.",
+    "tarjeta_qr": "Tarjeta/QR",
+    "transferencia": "Transferencia",
+}
+
+def totales_por_forma(ventas):
+    """Suma el monto de las ventas agrupado por forma de pago."""
+    totales = {forma: 0 for forma in FORMAS_PAGO}
+    for v in ventas:
+        if v.forma_pago in totales:
+            totales[v.forma_pago] += v.monto
+    return {forma: round(monto, 2) for forma, monto in totales.items()}
+
 def create_app():
     app = Flask(__name__)
-
+    app.jinja_env.globals["FORMAS_PAGO"] = FORMAS_PAGO
     app.config["SECRET_KEY"] = os.environ.get(
         "SECRET_KEY", "cambia-esta-clave-por-una-propia"
     )
@@ -256,6 +271,8 @@ def create_app():
     def dashboard():
         hoy = hoy_argentina()
         ventas_hoy = Venta.query.filter_by(fecha=hoy).all()
+        totales = totales_por_forma(ventas_hoy)
+        total_hoy = round(sum(v.monto for v in ventas_hoy), 2)
 
         if current_user.es_vendedor:
             clientes = Cliente.query.filter_by(activo=True).all()
@@ -271,33 +288,17 @@ def create_app():
                 "dashboard_vendedor.html",
                 hoy=hoy,
                 ventas_hoy=ventas_hoy,
-                total_hoy=round(sum(v.monto for v in ventas_hoy), 2),
-                efectivo_hoy=round(
-                    sum(v.monto for v in ventas_hoy if v.forma_pago == "efectivo"), 2
-                ),
-                cuenta_hoy=round(
-                    sum(
-                        v.monto
-                        for v in ventas_hoy
-                        if v.forma_pago == "cuenta_corriente"
-                    ),
-                    2,
-                ),
+                total_hoy=total_hoy,
+                efectivo_hoy=totales["efectivo"],
+                cuenta_hoy=totales["cuenta_corriente"],
+                tarjeta_hoy=totales["tarjeta_qr"],
+                transferencia_hoy=totales["transferencia"],
                 deudas_hoy=deudas_actuales,
                 deuda_total_actual=round(
                     sum(deuda["monto"] for deuda in deudas_actuales), 2
                 ),
             )
 
-        total_hoy = round(sum(v.monto for v in ventas_hoy), 2)
-        efectivo_hoy = round(
-            sum(v.monto for v in ventas_hoy if v.forma_pago == "efectivo"), 2
-        )
-        cuenta_hoy = round(
-            sum(v.monto for v in ventas_hoy if v.forma_pago == "cuenta_corriente"), 2
-        )
-
-        # Clientes con saldo pendiente (deuda), ordenados de mayor a menor
         clientes = Cliente.query.filter_by(activo=True).all()
         deudores = sorted(
             [c for c in clientes if c.saldo > 0],
@@ -311,9 +312,11 @@ def create_app():
             hoy=hoy,
             ventas_hoy=ventas_hoy,
             total_hoy=total_hoy,
-            efectivo_hoy=efectivo_hoy,
-            cuenta_hoy=cuenta_hoy,
-            deudores=deudores[:5],  # top 5 en el resumen
+            efectivo_hoy=totales["efectivo"],
+            cuenta_hoy=totales["cuenta_corriente"],
+            tarjeta_hoy=totales["tarjeta_qr"],
+            transferencia_hoy=totales["transferencia"],
+            deudores=deudores[:5],
             deuda_total=deuda_total,
             cantidad_deudores=len(deudores),
         )
@@ -985,7 +988,7 @@ def create_app():
                 errores.append("Elegí un cliente activo de la lista.")
             if not monto or monto <= 0:
                 errores.append("El monto tiene que ser mayor a 0.")
-            if forma_pago not in ("efectivo", "cuenta_corriente"):
+            if forma_pago not in FORMAS_PAGO:
                 errores.append("Forma de pago inválida.")
 
             if errores:
@@ -1059,8 +1062,7 @@ def create_app():
                 errores.append("Elegí un cliente.")
             if not monto or monto <= 0:
                 errores.append("El monto tiene que ser mayor a 0.")
-            if forma_pago not in ("efectivo", "cuenta_corriente"):
-                errores.append("Forma de pago inválida.")
+            if forma_pago not in FORMAS_PAGO:                errores.append("Forma de pago inválida.")
 
             if errores:
                 for e in errores:
@@ -1319,12 +1321,11 @@ def create_app():
             .all()
         )
         total_ventas = round(sum(v.monto for v in ventas), 2)
-        total_efectivo = round(
-            sum(v.monto for v in ventas if v.forma_pago == "efectivo"), 2
-        )
-        total_cuenta = round(
-            sum(v.monto for v in ventas if v.forma_pago == "cuenta_corriente"), 2
-        )
+        totales = totales_por_forma(ventas)
+        total_efectivo = totales["efectivo"]
+        total_cuenta = totales["cuenta_corriente"]
+        total_tarjeta = totales["tarjeta_qr"]
+        total_transferencia = totales["transferencia"]
 
         # Ventas agrupadas por día (para un mini-resumen día a día)
         ventas_por_dia = {}
@@ -1435,7 +1436,7 @@ def create_app():
                 venta.cliente.nombre[:18],
                 (venta.usuario.username if venta.usuario else "Sistema")[:14],
                 (venta.descripcion or "Sin descripcion")[:26],
-                "Efectivo" if venta.forma_pago == "efectivo" else "Cta.Cte.",
+                FORMAS_PAGO.get(venta.forma_pago, venta.forma_pago),
                 f"${venta.monto:,.2f}",
             ]
             for ancho, texto in zip(anchos, fila):

@@ -46,6 +46,16 @@
              {% if venta and venta.forma_pago == 'cuenta_corriente' %}checked{% endif %}>
       <span>📒 Cta. corriente</span>
     </label>
+    <label class="opcion">
+      <input type="radio" name="forma_pago" value="tarjeta_qr" onchange="marcar(this)"
+             {% if venta and venta.forma_pago == 'tarjeta_qr' %}checked{% endif %}>
+      <span>💳 Tarjeta/QR</span>
+    </label>
+    <label class="opcion">
+      <input type="radio" name="forma_pago" value="transferencia" onchange="marcar(this)"
+             {% if venta and venta.forma_pago == 'transferencia' %}checked{% endif %}>
+      <span>🏦 Transferencia</span>
+    </label>
   </div>
 
   <label for="fecha">Fecha</label>

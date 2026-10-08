@@ -1082,3 +1082,6 @@ input[type="search"] {
     white-space: nowrap;
   }
 }
+
+.opciones-radio { flex-wrap: wrap; }
+.opciones-radio label.opcion { flex: 1 1 calc(50% - 10px); }

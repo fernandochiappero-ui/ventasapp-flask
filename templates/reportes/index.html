@@ -28,6 +28,14 @@
     <div class="etiqueta">A cuenta corriente</div>
     <div class="valor cifra">${{ "%.2f"|format(total_cuenta) }}</div>
   </div>
+    <div class="tarjeta metrica">
+    <div class="etiqueta">Tarjeta / QR</div>
+    <div class="valor cifra">${{ "%.2f"|format(total_tarjeta) }}</div>
+  </div>
+  <div class="tarjeta metrica">
+    <div class="etiqueta">Transferencia</div>
+    <div class="valor cifra">${{ "%.2f"|format(total_transferencia) }}</div>
+  </div>
   <div class="tarjeta metrica">
     <div class="etiqueta">Deuda total (a hoy)</div>
     <div class="valor cifra ladrillo">${{ "%.2f"|format(deuda_total_actual) }}</div>
@@ -80,7 +88,7 @@
             <td>{{ venta.cliente.nombre }}</td>
             <td>{{ venta.usuario.username if venta.usuario else 'Sistema' }}</td>
             <td>{{ venta.descripcion or 'Sin descripción' }}</td>
-            <td>{{ 'Efectivo' if venta.forma_pago == 'efectivo' else 'Cta. Cte.' }}</td>
+            <td>{{ FORMAS_PAGO.get(venta.forma_pago, venta.forma_pago) }}</td>
             <td class="num cifra">${{ "%.2f"|format(venta.monto) }}</td>
           </tr>
           {% endfor %}
