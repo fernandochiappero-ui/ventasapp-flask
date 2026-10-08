@@ -4,6 +4,12 @@
 {% block contenido %}
 <h1>{{ 'Editar producto' if editando else 'Agregar producto al almacén' }}</h1>
 
+<a href="{{ url_for('buscar_productos_almacen') }}"
+   class="boton secundario boton-volver"
+   onclick="if (window.history.length > 1) { window.history.back(); return false; }">
+  ← Volver
+</a>
+
 <form method="POST" class="tarjeta formulario-producto">
   <label for="codigo">Código</label>
   <input type="text" id="codigo" name="codigo" maxlength="40"
