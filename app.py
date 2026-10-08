@@ -1062,7 +1062,8 @@ def create_app():
                 errores.append("Elegí un cliente.")
             if not monto or monto <= 0:
                 errores.append("El monto tiene que ser mayor a 0.")
-            if forma_pago not in FORMAS_PAGO:                errores.append("Forma de pago inválida.")
+            if forma_pago not in FORMAS_PAGO:                
+                errores.append("Forma de pago inválida.")
 
             if errores:
                 for e in errores:
@@ -1361,6 +1362,8 @@ def create_app():
             total_ventas=total_ventas,
             total_efectivo=total_efectivo,
             total_cuenta=total_cuenta,
+            total_tarjeta=total_tarjeta,
+            total_transferencia=total_transferencia,
             ventas=ventas,
             resumen_diario=resumen_diario,
             cargos=cargos,
