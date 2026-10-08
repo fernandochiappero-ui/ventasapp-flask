@@ -307,6 +307,14 @@ def create_app():
         )
         deuda_total = round(sum(c.saldo for c in deudores), 2)
 
+        efectivo_real_hoy = round(
+            totales["efectivo"]
+            - totales["tarjeta_qr"]
+            - totales["transferencia"]
+            - totales["cuenta_corriente"],
+            2,
+        )
+
         return render_template(
             "dashboard.html",
             hoy=hoy,
@@ -316,6 +324,7 @@ def create_app():
             cuenta_hoy=totales["cuenta_corriente"],
             tarjeta_hoy=totales["tarjeta_qr"],
             transferencia_hoy=totales["transferencia"],
+            efectivo_real_hoy=efectivo_real_hoy,
             deudores=deudores[:5],
             deuda_total=deuda_total,
             cantidad_deudores=len(deudores),
