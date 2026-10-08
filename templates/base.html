@@ -10,12 +10,13 @@
      bien en un celular (y no como una web de escritorio achicada) #}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}VERDULERIA EL GAUCHITO{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='8') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='9') }}">
   <script src="{{ url_for('static', filename='js/app.js', v='18') }}" defer></script>
 </head>
 <body>
   <div class="app">
     {% if current_user.is_authenticated %}
+    <div class="cabecera-fija">
     <div class="brand-banner">
       <div class="marca">VERDULERIA EL <span>GAUCHITO</span></div>
     </div>
@@ -101,6 +102,7 @@
         </div>
       </div>
     </nav>
+    </div>
     {% endif %}
 
     <div class="contenido-principal">

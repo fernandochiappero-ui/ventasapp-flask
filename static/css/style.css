@@ -1085,3 +1085,18 @@ input[type="search"] {
 
 .opciones-radio { flex-wrap: wrap; }
 .opciones-radio label.opcion { flex: 1 1 calc(50% - 10px); }
+
+.cabecera-fija {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.cabecera-fija .brand-banner,
+.cabecera-fija header.topbar {
+  position: static;
+}
+@media (min-width: 860px) {
+  .cabecera-fija nav.tabs {
+    position: static;
+  }
+}
