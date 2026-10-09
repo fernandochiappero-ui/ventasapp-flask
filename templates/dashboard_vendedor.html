@@ -16,10 +16,6 @@
     <div class="etiqueta">Transferencia</div>
     <div class="valor cifra">${{ "%.2f"|format(transferencia_hoy) }}</div>
   </div>
-  <div class="tarjeta metrica ladrillo">
-    <div class="etiqueta">Deuda total actual</div>
-    <div class="valor cifra">${{ "%.2f"|format(deuda_total_actual) }}</div>
-  </div>
 </div>
 
 <a href="{{ url_for('nueva_venta') }}" class="boton verde ancho">+ Cargar venta</a>
