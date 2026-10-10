@@ -1100,3 +1100,31 @@ input[type="search"] {
     position: static;
   }
 }
+.nav-usuario { display: none; }
+
+@media (min-width: 860px) {
+  header.topbar.topbar-vendedor { display: none; }
+
+  .nav-usuario {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    padding: 0 6px;
+  }
+  .nav-usuario .salir {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #243849;
+  }
+  nav.tabs .nav-usuario a.cerrar-sesion {
+    padding: 6px 10px;
+    border: 0;
+    color: #fff;
+    background: #075c28;
+    border-radius: 2px;
+  }
+  nav.tabs .nav-usuario a.cerrar-sesion:hover {
+    background: #9b3030;
+  }
+}
