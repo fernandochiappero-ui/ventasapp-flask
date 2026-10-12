@@ -1128,3 +1128,25 @@ input[type="search"] {
     background: #9b3030;
   }
 }
+@media (min-width: 860px) {
+  nav.tabs a {
+    padding: 10px 6px;
+    gap: 3px;
+    font-size: 0.74rem;
+  }
+  nav.tabs .nav-usuario a.salir {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.74rem;
+  }
+  nav.tabs .nav-usuario a.cerrar-sesion {
+    padding: 5px 8px;
+    font-size: 0.74rem;
+  }
+}
+
+/* En pantallas medianas se ocultan los íconos para que entre todo en una fila */
+@media (min-width: 860px) and (max-width: 1399px) {
+  nav.tabs a .icono { display: none; }
+}
