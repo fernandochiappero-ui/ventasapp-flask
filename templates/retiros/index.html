@@ -6,6 +6,41 @@
 <a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Volver</a>
 
 <div class="tarjeta">
+  <h2>Retiros del vendedor</h2>
+  <form method="POST" action="{{ url_for('nuevo_retiro_vendedor') }}">
+    <label for="monto_retiro">Monto *</label>
+    <input type="number" id="monto_retiro" name="monto" step="0.01" min="0.01"
+           inputmode="decimal" required>
+
+    <label for="descripcion_retiro">Descripción</label>
+    <input type="text" id="descripcion_retiro" name="descripcion" maxlength="300"
+           placeholder="Ej: almuerzo, adelanto, etc.">
+
+    <button type="submit" class="ancho verde">Registrar retiro</button>
+  </form>
+
+  <h2 style="margin-top:18px;">Retiros de hoy ({{ retiros_hoy|length }})</h2>
+  {% if retiros_hoy %}
+    {% for r in retiros_hoy %}
+    <div class="renglon">
+      <div>
+        <div class="principal">{{ r.usuario.username if r.usuario else 'Sistema' }}</div>
+        <div class="secundario">{{ r.creado.strftime('%H:%M') }}{% if r.descripcion %} · {{ r.descripcion }}{% endif %}</div>
+      </div>
+      <div class="monto cifra ladrillo">${{ "%.2f"|format(r.monto) }}</div>
+    </div>
+    {% endfor %}
+    <div class="renglon">
+      <div class="principal">Total retirado hoy</div>
+      <div class="monto cifra ladrillo">${{ "%.2f"|format(total_retiros_hoy) }}</div>
+    </div>
+  {% else %}
+    <p class="vacio">No hay retiros cargados hoy.</p>
+  {% endif %}
+</div>
+
+
+<div class="tarjeta">
   <h2>Proveedores</h2>
   <form method="POST" action="{{ url_for('alta_proveedor') }}" class="buscador">
     <div class="buscador-fila">
@@ -101,37 +136,5 @@
   {% endif %}
 </div>
 
-<div class="tarjeta">
-  <h2>Retiros del vendedor</h2>
-  <form method="POST" action="{{ url_for('nuevo_retiro_vendedor') }}">
-    <label for="monto_retiro">Monto *</label>
-    <input type="number" id="monto_retiro" name="monto" step="0.01" min="0.01"
-           inputmode="decimal" required>
 
-    <label for="descripcion_retiro">Descripción</label>
-    <input type="text" id="descripcion_retiro" name="descripcion" maxlength="300"
-           placeholder="Ej: almuerzo, adelanto, etc.">
-
-    <button type="submit" class="ancho verde">Registrar retiro</button>
-  </form>
-
-  <h2 style="margin-top:18px;">Retiros de hoy ({{ retiros_hoy|length }})</h2>
-  {% if retiros_hoy %}
-    {% for r in retiros_hoy %}
-    <div class="renglon">
-      <div>
-        <div class="principal">{{ r.usuario.username if r.usuario else 'Sistema' }}</div>
-        <div class="secundario">{{ r.creado.strftime('%H:%M') }}{% if r.descripcion %} · {{ r.descripcion }}{% endif %}</div>
-      </div>
-      <div class="monto cifra ladrillo">${{ "%.2f"|format(r.monto) }}</div>
-    </div>
-    {% endfor %}
-    <div class="renglon">
-      <div class="principal">Total retirado hoy</div>
-      <div class="monto cifra ladrillo">${{ "%.2f"|format(total_retiros_hoy) }}</div>
-    </div>
-  {% else %}
-    <p class="vacio">No hay retiros cargados hoy.</p>
-  {% endif %}
-</div>
 {% endblock %}
