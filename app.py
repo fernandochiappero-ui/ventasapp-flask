@@ -1164,7 +1164,7 @@ def create_app():
             .order_by(PagoProveedor.creado.desc()).all()
         )
         retiros_hoy = (
-            RetiroVendedor.query.filter_by(fecha=hoy)
+            RetiroVendedor.query.filter_by(fecha=hoy, usuario_id=current_user.id)
             .order_by(RetiroVendedor.creado.desc()).all()
         )
         return render_template(
