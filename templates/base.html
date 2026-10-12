@@ -70,7 +70,7 @@
       <a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">
         <span class="icono">🏠</span>Inicio
       </a>
-      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nueva_venta','nuevo_cliente','registrar_pago_vendedor'] }}">
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nueva_venta','nuevo_cliente','registrar_pago_vendedor','retiros','editar_proveedor'] }}">
         <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
           <span class="icono">📁</span>Archivos
         </a>
@@ -78,6 +78,7 @@
           <a href="{{ url_for('nueva_venta') }}">🧾 Cargar venta</a>
           <a href="{{ url_for('nuevo_cliente', volver='ventas') }}">👤 Agregar cliente</a>
           <a href="{{ url_for('registrar_pago_vendedor') }}">💵 Registrar pago</a>
+          <a href="{{ url_for('retiros') }}">💸 Retiros</a>
         </div>
       </div>
       {% endif %}

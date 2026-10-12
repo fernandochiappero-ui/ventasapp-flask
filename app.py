@@ -27,7 +27,10 @@ from flask_login import (
 from functools import wraps
 from sqlalchemy import inspect, or_, text
 from extensions import db, login_manager
-from models import Usuario, Cliente, Venta, MovimientoCC, ProductoAlmacen, ProductoVerduleria
+from models import (
+    Usuario, Cliente, Venta, MovimientoCC, ProductoAlmacen, ProductoVerduleria,
+    Proveedor, PagoProveedor, RetiroVendedor,
+)
 
 ZONA_HORARIA = ZoneInfo("America/Argentina/Buenos_Aires")
 def hoy_argentina(): return datetime.now(ZONA_HORARIA).date()
@@ -82,9 +85,16 @@ def totales_por_forma(ventas):
             totales[v.forma_pago] += v.monto
     return {forma: round(monto, 2) for forma, monto in totales.items()}
 
+TIPOS_EGRESO = {
+    "pago_total": "Pago total",
+    "pago_parcial": "Pago parcial",
+    "cuenta_corriente": "A cuenta corriente",
+}
+
 def create_app():
     app = Flask(__name__)
     app.jinja_env.globals["FORMAS_PAGO"] = FORMAS_PAGO
+    app.jinja_env.globals["TIPOS_EGRESO"] = TIPOS_EGRESO
     app.config["SECRET_KEY"] = os.environ.get(
         "SECRET_KEY", "cambia-esta-clave-por-una-propia"
     )
@@ -1129,6 +1139,131 @@ def create_app():
         db.session.commit()
         flash("Venta eliminada.", "success")
         return redirect(url_for("listar_ventas", fecha=fecha.isoformat()))
+
+    # ------------------------------------------------------------------
+    # RETIROS (proveedores y retiros del vendedor)
+    # ------------------------------------------------------------------
+
+    @app.route("/retiros")
+    @login_required
+    def retiros():
+        hoy = hoy_argentina()
+        proveedores = Proveedor.query.filter_by(activo=True).order_by(Proveedor.nombre).all()
+        resumen = []
+        for p in proveedores:
+            cuenta = round(sum(x.monto for x in p.pagos if x.tipo == "cuenta_corriente"), 2)
+            pagado = round(sum(x.monto for x in p.pagos if x.tipo != "cuenta_corriente"), 2)
+            resumen.append({
+                "proveedor": p,
+                "cuenta": cuenta,
+                "pagado": pagado,
+                "debe": max(round(cuenta - pagado, 2), 0),
+            })
+        egresos_hoy = (
+            PagoProveedor.query.filter_by(fecha=hoy)
+            .order_by(PagoProveedor.creado.desc()).all()
+        )
+        retiros_hoy = (
+            RetiroVendedor.query.filter_by(fecha=hoy)
+            .order_by(RetiroVendedor.creado.desc()).all()
+        )
+        return render_template(
+            "retiros/index.html",
+            hoy=hoy,
+            resumen=resumen,
+            egresos_hoy=egresos_hoy,
+            retiros_hoy=retiros_hoy,
+            total_pagado_hoy=round(sum(e.monto for e in egresos_hoy if e.tipo != "cuenta_corriente"), 2),
+            total_cc_hoy=round(sum(e.monto for e in egresos_hoy if e.tipo == "cuenta_corriente"), 2),
+            total_retiros_hoy=round(sum(r.monto for r in retiros_hoy), 2),
+        )
+
+    @app.route("/retiros/proveedores/nuevo", methods=["POST"])
+    @login_required
+    def alta_proveedor():
+        nombre = request.form.get("nombre", "").strip()
+        if not nombre:
+            flash("Escribí el nombre del proveedor.", "error")
+            return redirect(url_for("retiros"))
+        existentes = Proveedor.query.filter_by(activo=True).all()
+        if any(normalizar(p.nombre) == normalizar(nombre) for p in existentes):
+            flash("Ya existe un proveedor con ese nombre.", "error")
+            return redirect(url_for("retiros"))
+        db.session.add(Proveedor(nombre=nombre))
+        db.session.commit()
+        flash(f"Proveedor '{nombre}' agregado.", "success")
+        return redirect(url_for("retiros"))
+
+    @app.route("/retiros/proveedores/<int:proveedor_id>/editar", methods=["GET", "POST"])
+    @login_required
+    def editar_proveedor(proveedor_id):
+        proveedor = Proveedor.query.filter_by(id=proveedor_id, activo=True).first_or_404()
+        if request.method == "POST":
+            nombre = request.form.get("nombre", "").strip()
+            if not nombre:
+                flash("El nombre es obligatorio.", "error")
+                return render_template("retiros/proveedor_editar.html", proveedor=proveedor)
+            otros = Proveedor.query.filter(
+                Proveedor.activo.is_(True), Proveedor.id != proveedor.id
+            ).all()
+            if any(normalizar(p.nombre) == normalizar(nombre) for p in otros):
+                flash("Ya existe otro proveedor con ese nombre.", "error")
+                return render_template("retiros/proveedor_editar.html", proveedor=proveedor)
+            proveedor.nombre = nombre
+            proveedor.telefono = request.form.get("telefono", "").strip() or None
+            db.session.commit()
+            flash("Proveedor actualizado.", "success")
+            return redirect(url_for("retiros"))
+        return render_template("retiros/proveedor_editar.html", proveedor=proveedor)
+
+    @app.route("/retiros/proveedores/<int:proveedor_id>/eliminar", methods=["POST"])
+    @login_required
+    def baja_proveedor(proveedor_id):
+        proveedor = Proveedor.query.filter_by(id=proveedor_id, activo=True).first_or_404()
+        proveedor.activo = False  # se conserva el historial de pagos
+        db.session.commit()
+        flash(f"Proveedor '{proveedor.nombre}' dado de baja.", "success")
+        return redirect(url_for("retiros"))
+
+    @app.route("/retiros/egresos/nuevo", methods=["POST"])
+    @login_required
+    def nuevo_egreso_proveedor():
+        proveedor_id = request.form.get("proveedor_id", type=int)
+        tipo = request.form.get("tipo", "")
+        monto = request.form.get("monto", type=float)
+        descripcion = request.form.get("descripcion", "").strip()
+        proveedor = Proveedor.query.filter_by(id=proveedor_id, activo=True).first() if proveedor_id else None
+        if not proveedor:
+            flash("Elegí un proveedor.", "error")
+        elif tipo not in TIPOS_EGRESO:
+            flash("Elegí el tipo de pago.", "error")
+        elif not monto or monto <= 0:
+            flash("El monto tiene que ser mayor a 0.", "error")
+        else:
+            db.session.add(PagoProveedor(
+                proveedor_id=proveedor.id, usuario_id=current_user.id,
+                fecha=hoy_argentina(), tipo=tipo, monto=monto,
+                descripcion=descripcion or None,
+            ))
+            db.session.commit()
+            flash(f"{TIPOS_EGRESO[tipo]} a {proveedor.nombre} registrado: ${monto:,.2f}.", "success")
+        return redirect(url_for("retiros"))
+
+    @app.route("/retiros/vendedor/nuevo", methods=["POST"])
+    @login_required
+    def nuevo_retiro_vendedor():
+        monto = request.form.get("monto", type=float)
+        descripcion = request.form.get("descripcion", "").strip()
+        if not monto or monto <= 0:
+            flash("El monto del retiro tiene que ser mayor a 0.", "error")
+        else:
+            db.session.add(RetiroVendedor(
+                usuario_id=current_user.id, fecha=hoy_argentina(),
+                monto=monto, descripcion=descripcion or None,
+            ))
+            db.session.commit()
+            flash(f"Retiro de ${monto:,.2f} registrado.", "success")
+        return redirect(url_for("retiros"))
 
     # ------------------------------------------------------------------
     # CUENTA CORRIENTE

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titulo %}Editar proveedor{% endblock %}
+{% block contenido %}
+<h1>Editar proveedor</h1>
+
+<a href="{{ url_for('retiros') }}" class="boton secundario boton-volver">← Volver</a>
+
+<form method="POST" class="tarjeta">
+  <label for="nombre">Nombre *</label>
+  <input type="text" id="nombre" name="nombre" maxlength="150" required
+         value="{{ request.form.get('nombre', proveedor.nombre) }}">
+
+  <label for="telefono">Teléfono</label>
+  <input type="text" id="telefono" name="telefono" maxlength="60"
+         value="{{ request.form.get('telefono', proveedor.telefono or '') }}">
+
+  <button type="submit" class="ancho verde">Guardar cambios</button>
+</form>
+{% endblock %}

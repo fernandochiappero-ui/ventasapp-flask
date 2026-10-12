@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block titulo %}Retiros{% endblock %}
+{% block contenido %}
+<h1>Retiros · {{ hoy.strftime('%d/%m/%Y') }}</h1>
+
+<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Volver</a>
+
+<div class="tarjeta">
+  <h2>Proveedores</h2>
+  <form method="POST" action="{{ url_for('alta_proveedor') }}" class="buscador">
+    <div class="buscador-fila">
+      <input type="text" name="nombre" maxlength="150" autocomplete="off"
+             placeholder="Nombre del proveedor" required>
+      <button type="submit" class="verde">+ Agregar proveedor</button>
+    </div>
+  </form>
+
+  {% if resumen %}
+    {% for r in resumen %}
+    <div class="renglon">
+      <div>
+        <div class="principal">{{ r.proveedor.nombre }}</div>
+        <div class="secundario">
+          Cta. cte.: ${{ "%.2f"|format(r.cuenta) }} · Pagado: ${{ "%.2f"|format(r.pagado) }}
+          · <strong>Debe: ${{ "%.2f"|format(r.debe) }}</strong>
+        </div>
+      </div>
+      <div class="acciones-producto">
+        <a href="{{ url_for('editar_proveedor', proveedor_id=r.proveedor.id) }}"
+           class="boton secundario">Editar</a>
+        <form method="POST"
+              action="{{ url_for('baja_proveedor', proveedor_id=r.proveedor.id) }}"
+              data-confirmar-eliminacion
+              data-titulo="¿Dar de baja proveedor?"
+              data-mensaje="¿Querés dar de baja a {{ r.proveedor.nombre }}? Se conserva su historial de pagos."
+              data-boton="Dar de baja">
+          <button type="submit" class="boton peligro">Eliminar</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="vacio">Todavía no cargaste proveedores.</p>
+  {% endif %}
+</div>
+
+<div class="tarjeta">
+  <h2>Egresos a proveedores</h2>
+  {% if resumen %}
+  <form method="POST" action="{{ url_for('nuevo_egreso_proveedor') }}">
+    <label for="proveedor_id">Proveedor *</label>
+    <select id="proveedor_id" name="proveedor_id" required>
+      <option value="">Elegir...</option>
+      {% for r in resumen %}
+      <option value="{{ r.proveedor.id }}">{{ r.proveedor.nombre }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="tipo">Tipo *</label>
+    <select id="tipo" name="tipo" required>
+      {% for clave, nombre in TIPOS_EGRESO.items() %}
+      <option value="{{ clave }}">{{ nombre }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="monto_egreso">Monto *</label>
+    <input type="number" id="monto_egreso" name="monto" step="0.01" min="0.01"
+           inputmode="decimal" required>
+
+    <label for="descripcion_egreso">Descripción</label>
+    <input type="text" id="descripcion_egreso" name="descripcion" maxlength="300"
+           placeholder="Ej: factura 123, mercadería, etc.">
+
+    <button type="submit" class="ancho verde">Registrar egreso</button>
+  </form>
+  {% else %}
+    <p class="vacio">Agregá un proveedor para cargar egresos.</p>
+  {% endif %}
+
+  <h2 style="margin-top:18px;">Egresos de hoy ({{ egresos_hoy|length }})</h2>
+  {% if egresos_hoy %}
+    {% for e in egresos_hoy %}
+    <div class="renglon">
+      <div>
+        <div class="principal">{{ e.proveedor.nombre }}</div>
+        <div class="secundario">{{ TIPOS_EGRESO.get(e.tipo, e.tipo) }} · {{ e.creado.strftime('%H:%M') }}{% if e.descripcion %} · {{ e.descripcion }}{% endif %}</div>
+      </div>
+      <div class="monto cifra {{ 'ladrillo' if e.tipo == 'cuenta_corriente' else 'verde' }}">${{ "%.2f"|format(e.monto) }}</div>
+    </div>
+    {% endfor %}
+    <div class="renglon">
+      <div class="principal">Pagado hoy</div>
+      <div class="monto cifra verde">${{ "%.2f"|format(total_pagado_hoy) }}</div>
+    </div>
+    <div class="renglon">
+      <div class="principal">Cargado a cuenta corriente hoy</div>
+      <div class="monto cifra ladrillo">${{ "%.2f"|format(total_cc_hoy) }}</div>
+    </div>
+  {% else %}
+    <p class="vacio">No hay egresos cargados hoy.</p>
+  {% endif %}
+</div>
+
+<div class="tarjeta">
+  <h2>Retiros del vendedor</h2>
+  <form method="POST" action="{{ url_for('nuevo_retiro_vendedor') }}">
+    <label for="monto_retiro">Monto *</label>
+    <input type="number" id="monto_retiro" name="monto" step="0.01" min="0.01"
+           inputmode="decimal" required>
+
+    <label for="descripcion_retiro">Descripción</label>
+    <input type="text" id="descripcion_retiro" name="descripcion" maxlength="300"
+           placeholder="Ej: almuerzo, adelanto, etc.">
+
+    <button type="submit" class="ancho verde">Registrar retiro</button>
+  </form>
+
+  <h2 style="margin-top:18px;">Retiros de hoy ({{ retiros_hoy|length }})</h2>
+  {% if retiros_hoy %}
+    {% for r in retiros_hoy %}
+    <div class="renglon">
+      <div>
+        <div class="principal">{{ r.usuario.username if r.usuario else 'Sistema' }}</div>
+        <div class="secundario">{{ r.creado.strftime('%H:%M') }}{% if r.descripcion %} · {{ r.descripcion }}{% endif %}</div>
+      </div>
+      <div class="monto cifra ladrillo">${{ "%.2f"|format(r.monto) }}</div>
+    </div>
+    {% endfor %}
+    <div class="renglon">
+      <div class="principal">Total retirado hoy</div>
+      <div class="monto cifra ladrillo">${{ "%.2f"|format(total_retiros_hoy) }}</div>
+    </div>
+  {% else %}
+    <p class="vacio">No hay retiros cargados hoy.</p>
+  {% endif %}
+</div>
+{% endblock %}

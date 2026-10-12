@@ -161,3 +161,49 @@ class ProductoVerduleria(db.Model):
     precio_venta = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado = db.Column(db.DateTime, nullable=False, default=ahora_argentina)
+
+
+    
+
+class Proveedor(db.Model):
+    """Proveedor al que se le compra mercadería."""
+    __tablename__ = "proveedores"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(150), nullable=False)
+    telefono = db.Column(db.String(60))
+    activo = db.Column(db.Boolean, nullable=False, default=True)
+    creado = db.Column(db.DateTime, default=ahora_argentina)
+
+
+class PagoProveedor(db.Model):
+    """
+    Egreso a un proveedor.
+    tipo = "pago_total" | "pago_parcial"  -> sale plata de la caja
+    tipo = "cuenta_corriente"             -> compra sin pagar, suma deuda
+    """
+    __tablename__ = "pagos_proveedores"
+
+    id = db.Column(db.Integer, primary_key=True)
+    proveedor_id = db.Column(db.Integer, db.ForeignKey("proveedores.id"), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    fecha = db.Column(db.Date, default=date.today, nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)
+    monto = db.Column(db.Float, nullable=False)
+    descripcion = db.Column(db.String(300))
+    creado = db.Column(db.DateTime, default=ahora_argentina)
+    proveedor = db.relationship("Proveedor", backref="pagos")
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
+
+
+class RetiroVendedor(db.Model):
+    """Retiro de dinero de la caja hecho por el vendedor."""
+    __tablename__ = "retiros_vendedor"
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    fecha = db.Column(db.Date, default=date.today, nullable=False)
+    monto = db.Column(db.Float, nullable=False)
+    descripcion = db.Column(db.String(300))
+    creado = db.Column(db.DateTime, default=ahora_argentina)
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
