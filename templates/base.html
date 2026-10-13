@@ -71,6 +71,7 @@
       <div class="menu-desplegable {{ 'activo' if request.endpoint in ['listar_proveedores','nuevo_proveedor','modificar_proveedor','desactivar_proveedor','nueva_compra_proveedor','listar_compras_proveedor','pagar_compra_proveedor'] }}">
         <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">Proveedores</a>
         <div class="submenu">
+          <a href="{{ url_for('listar_proveedores') }}">Lista de proveedores</a>
           <a href="{{ url_for('nuevo_proveedor') }}">Agregar proveedor</a>
           <a href="{{ url_for('nueva_compra_proveedor') }}">Registrar compra</a>
           <a href="{{ url_for('listar_compras_proveedor') }}">Compras a proveedores</a>
