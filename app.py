@@ -758,9 +758,9 @@ def create_app():
         hoy = hoy_argentina()
         ventas_hoy = Venta.query.filter_by(fecha=hoy).all()
         totales = totales_por_forma(ventas_hoy)
-        total_hoy = round(sum(v.monto for v in ventas_hoy), 2)
-        # Ventas de balanza: total bruto de ventas en todos los medios de pago.
-        # Efectivo disponible: se descuentan los medios que no ingresan como efectivo.
+        # La carga de balanza se registra con forma "efectivo" aunque incluya
+        # operaciones que luego se discriminan por transferencia, tarjeta/QR o CC.
+        total_hoy = totales["efectivo"]
         efectivo_disponible_hoy = round(
             total_hoy
             - totales["cuenta_corriente"]
@@ -1972,7 +1972,10 @@ def create_app():
             .order_by(Venta.fecha, Venta.creado, Venta.id)
             .all()
         )
-        total_ventas = round(sum(v.monto for v in ventas), 2)
+        # Las ventas cargadas como efectivo representan el total de balanza.
+        # Las otras formas son cargas aparte que se restan para obtener caja.
+        ventas_balanza = [venta for venta in ventas if venta.forma_pago == "efectivo"]
+        total_ventas = round(sum(venta.monto for venta in ventas_balanza), 2)
         totales = totales_por_forma(ventas)
         total_cuenta = totales["cuenta_corriente"]
         total_tarjeta = totales["tarjeta_qr"]
@@ -2032,7 +2035,7 @@ def create_app():
             desde=desde,
             hasta=hasta,
             total_ventas=total_ventas,
-            cantidad_ventas=len(ventas),
+            cantidad_ventas=len(ventas_balanza),
             total_efectivo=efectivo_disponible,
             egresos_efectivo=egresos_efectivo,
             egresos_efectivo_por_usuario=egresos_efectivo_por_usuario,
