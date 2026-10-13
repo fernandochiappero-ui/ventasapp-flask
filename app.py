@@ -1996,7 +1996,9 @@ def create_app():
         egresos_efectivo = sum(
             (movimiento.monto for movimiento in movimientos_efectivo), Decimal("0.00")
         )
-        efectivo_disponible = round(efectivo_ventas - egresos_efectivo, 2)
+        efectivo_disponible = round(
+            Decimal(str(efectivo_ventas)) - egresos_efectivo, 2
+        )
         egresos_efectivo_por_usuario = {}
         for movimiento in movimientos_efectivo:
             nombre_usuario = movimiento.usuario.username
