@@ -403,9 +403,9 @@ def create_app():
             flash("Pago imputado a la factura.", "success")
         return redirect(url_for("listar_compras_proveedor"))
 
-    @app.route("/egresos", methods=["GET", "POST"])
+    @app.route("/egresos/nuevo", methods=["GET", "POST"])
     @login_required
-    def modulo_egresos():
+    def nuevo_egreso():
         if request.method == "POST":
             monto = decimal_formulario("monto")
             concepto = request.form.get("concepto", "").strip()
@@ -421,7 +421,13 @@ def create_app():
                 ))
                 db.session.commit()
                 flash("Egreso registrado.", "success")
-                return redirect(url_for("modulo_egresos"))
+                destino = "retiros" if current_user.es_vendedor else "modulo_egresos"
+                return redirect(url_for(destino))
+        return render_template("egresos/nuevo.html")
+
+    @app.route("/egresos")
+    @administrador_requerido
+    def modulo_egresos():
         desde_texto, hasta_texto = request.args.get("desde", ""), request.args.get("hasta", "")
         try:
             desde = date.fromisoformat(desde_texto) if desde_texto else hoy_argentina().replace(day=1)
@@ -430,9 +436,7 @@ def create_app():
             desde, hasta = hoy_argentina().replace(day=1), hoy_argentina()
         q = Egreso.query.filter(Egreso.fecha >= datetime.combine(desde, datetime.min.time()), Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()))
         vendedor_id = request.args.get("usuario_id", type=int)
-        if current_user.es_vendedor:
-            q = q.filter_by(usuario_id=current_user.id)
-        elif vendedor_id:
+        if vendedor_id:
             q = q.filter_by(usuario_id=vendedor_id)
         categoria_filtro = request.args.get("categoria", "")
         forma_filtro = request.args.get("forma_pago", "")
@@ -451,7 +455,7 @@ def create_app():
             orden = "fecha"
             q = q.order_by(Egreso.fecha.desc(), Egreso.id.desc())
         egresos = q.all()
-        usuarios = Usuario.query.order_by(Usuario.username).all() if current_user.es_administrador else []
+        usuarios = Usuario.query.order_by(Usuario.username).all()
         por_usuario = {}
         for e in egresos:
             clave = e.usuario.username if e.usuario else "Sistema"
@@ -472,10 +476,10 @@ def create_app():
                                total_semana=total_semana, total_mes=total_mes)
 
     @app.route("/egresos/<int:egreso_id>/editar", methods=["GET", "POST"])
-    @login_required
+    @administrador_requerido
     def editar_egreso(egreso_id):
         egreso = db.get_or_404(Egreso, egreso_id)
-        if current_user.es_vendedor or egreso.estado != "activo" or egreso.categoria == "pago_proveedor":
+        if egreso.estado != "activo" or egreso.categoria == "pago_proveedor":
             flash("Solo el administrador puede modificar egresos.", "error")
             return redirect(url_for("modulo_egresos"))
         if request.method == "POST":
@@ -1542,7 +1546,21 @@ def create_app():
     @app.route("/retiros")
     @login_required
     def retiros():
-        return redirect(url_for("modulo_egresos"))
+        if current_user.es_administrador:
+            return redirect(url_for("modulo_egresos"))
+        hoy = hoy_argentina()
+        inicio = datetime.combine(hoy, datetime.min.time())
+        fin = datetime.combine(hoy + timedelta(days=1), datetime.min.time())
+        retiros_hoy = Egreso.query.filter(
+            Egreso.usuario_id == current_user.id,
+            Egreso.categoria == "retiro",
+            Egreso.fecha >= inicio,
+            Egreso.fecha < fin,
+        ).order_by(Egreso.fecha.desc(), Egreso.id.desc()).all()
+        return render_template(
+            "egresos/retiros_hoy.html", hoy=hoy, retiros_hoy=retiros_hoy,
+            total_retiros_hoy=sum((r.monto for r in retiros_hoy), Decimal("0.00")),
+        )
         hoy = hoy_argentina()
         proveedores = Proveedor.query.filter_by(activo=True).order_by(Proveedor.nombre).all()
         resumen = []
@@ -1660,7 +1678,7 @@ def create_app():
                                   categoria="retiro", forma_pago="efectivo"))
             db.session.commit()
             flash(f"Retiro de ${monto:,.2f} registrado.", "success")
-        return redirect(url_for("modulo_egresos"))
+        return redirect(url_for("retiros"))
         monto = request.form.get("monto", type=float)
         descripcion = request.form.get("descripcion", "").strip()
         if not monto or monto <= 0:
