@@ -1303,3 +1303,38 @@ table.reporte tbody tr:nth-child(even),
   :root { color-scheme: light; }
   html, body { background: #fff; color: #000; }
 }
+
+@media (max-width: 859px) {
+  nav.tabs,
+  nav.tabs.menu-abierto {
+    background: #111916;
+    color: #e5eee9;
+  }
+  nav.tabs > a,
+  nav.tabs > .menu-desplegable > .menu-boton,
+  nav.tabs .nav-usuario a,
+  nav.tabs .nav-usuario span {
+    background: #1a2420;
+    color: #e5eee9;
+    border-color: #35463e;
+  }
+  nav.tabs > a.activo,
+  nav.tabs > .menu-desplegable.activo > .menu-boton {
+    background: #176b43;
+    color: #fff;
+  }
+  nav.tabs .menu-desplegable .submenu {
+    background: #202d27;
+    border-color: #35463e;
+  }
+  nav.tabs .menu-desplegable .submenu a {
+    background: #202d27;
+    color: #d5e3dc;
+    border-color: #35463e;
+  }
+  nav.tabs .menu-desplegable .submenu a:hover,
+  nav.tabs .menu-desplegable .submenu a:focus {
+    background: #2c4036;
+    color: #fff;
+  }
+}

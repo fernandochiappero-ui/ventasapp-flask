@@ -1971,16 +1971,6 @@ def create_app():
             .all()
         )
         total_ventas = round(sum(v.monto for v in ventas), 2)
-        ventas_por_usuario = {}
-        for venta in ventas:
-            nombre_usuario = venta.usuario.username if venta.usuario else "Sistema"
-            fila = ventas_por_usuario.setdefault(
-                nombre_usuario, {"total": 0.0, "cantidad": 0}
-            )
-            fila["total"] += venta.monto
-            fila["cantidad"] += 1
-        for fila in ventas_por_usuario.values():
-            fila["total"] = round(fila["total"], 2)
         totales = totales_por_forma(ventas)
         total_cuenta = totales["cuenta_corriente"]
         total_tarjeta = totales["tarjeta_qr"]
@@ -2018,15 +2008,6 @@ def create_app():
             fila["total"] += movimiento.monto
             fila["cantidad"] += 1
 
-        # Ventas agrupadas por día (para un mini-resumen día a día)
-        ventas_por_dia = {}
-        for v in ventas:
-            ventas_por_dia.setdefault(v.fecha, []).append(v)
-        resumen_diario = [
-            {"fecha": f, "total": round(sum(v.monto for v in vs), 2), "cantidad": len(vs)}
-            for f, vs in sorted(ventas_por_dia.items())
-        ]
-
         # --- Reporte de deudas: movimientos de cuenta corriente en el rango ---
         movimientos = (
             MovimientoCC.query.filter(
@@ -2051,7 +2032,6 @@ def create_app():
             hasta=hasta,
             total_ventas=total_ventas,
             cantidad_ventas=len(ventas),
-            ventas_por_usuario=ventas_por_usuario,
             total_efectivo=efectivo_disponible,
             efectivo_ventas=efectivo_ventas,
             egresos_efectivo=egresos_efectivo,
@@ -2060,7 +2040,6 @@ def create_app():
             total_tarjeta=total_tarjeta,
             total_transferencia=total_transferencia,
             ventas=ventas,
-            resumen_diario=resumen_diario,
             cargos=cargos,
             pagos=pagos,
             deudores=deudores,

@@ -43,45 +43,12 @@
 </div>
 
 <div class="tarjeta">
-  <h2>Cálculo de efectivo</h2>
-  <p>Ventas del período (${{ "%.2f"|format(total_ventas) }}) menos cuenta corriente (${{ "%.2f"|format(total_cuenta) }}), tarjeta/QR (${{ "%.2f"|format(total_tarjeta) }}), transferencias (${{ "%.2f"|format(total_transferencia) }}) y movimientos pagados en efectivo (${{ "%.2f"|format(egresos_efectivo) }}).</p>
-  <h3>Movimientos en efectivo por usuario</h3>
+  <h2>Retiros (Cobros)</h2>
   {% for usuario, datos in egresos_efectivo_por_usuario.items() %}
     <div class="renglon"><div class="principal">{{ usuario }} · {{ datos.cantidad }} movimientos</div><div class="monto cifra ladrillo">${{ "%.2f"|format(datos.total) }}</div></div>
   {% else %}
     <p class="vacio">No hay movimientos pagados en efectivo en este período.</p>
   {% endfor %}
-</div>
-
-<div class="tarjeta">
-  <h2>Ventas por usuario</h2>
-  {% for usuario, datos in ventas_por_usuario.items() %}
-    <div class="renglon"><div class="principal">{{ usuario }} · {{ datos.cantidad }} ventas</div><div class="monto cifra">${{ "%.2f"|format(datos.total) }}</div></div>
-  {% else %}
-    <p class="vacio">No hay ventas registradas en este período.</p>
-  {% endfor %}
-</div>
-
-<div class="tarjeta">
-  <h2>Ventas por día</h2>
-  {% if resumen_diario %}
-    <table class="reporte">
-      <thead>
-        <tr><th>Fecha</th><th class="num">Cant.</th><th class="num">Total</th></tr>
-      </thead>
-      <tbody>
-        {% for d in resumen_diario %}
-        <tr>
-          <td>{{ d.fecha.strftime('%d/%m/%Y') }}</td>
-          <td class="num">{{ d.cantidad }}</td>
-          <td class="num cifra">${{ "%.2f"|format(d.total) }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p class="vacio">No hubo ventas en este rango.</p>
-  {% endif %}
 </div>
 
 <div class="tarjeta">
