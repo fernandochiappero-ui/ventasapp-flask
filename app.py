@@ -1967,10 +1967,20 @@ def create_app():
         # --- Reporte de ventas en el rango ---
         ventas = (
             Venta.query.filter(Venta.fecha >= desde, Venta.fecha <= hasta)
-            .order_by(Venta.fecha)
+            .order_by(Venta.fecha, Venta.creado, Venta.id)
             .all()
         )
         total_ventas = round(sum(v.monto for v in ventas), 2)
+        ventas_por_usuario = {}
+        for venta in ventas:
+            nombre_usuario = venta.usuario.username if venta.usuario else "Sistema"
+            fila = ventas_por_usuario.setdefault(
+                nombre_usuario, {"total": 0.0, "cantidad": 0}
+            )
+            fila["total"] += venta.monto
+            fila["cantidad"] += 1
+        for fila in ventas_por_usuario.values():
+            fila["total"] = round(fila["total"], 2)
         totales = totales_por_forma(ventas)
         total_cuenta = totales["cuenta_corriente"]
         total_tarjeta = totales["tarjeta_qr"]
@@ -2040,6 +2050,8 @@ def create_app():
             desde=desde,
             hasta=hasta,
             total_ventas=total_ventas,
+            cantidad_ventas=len(ventas),
+            ventas_por_usuario=ventas_por_usuario,
             total_efectivo=efectivo_disponible,
             efectivo_ventas=efectivo_ventas,
             egresos_efectivo=egresos_efectivo,

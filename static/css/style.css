@@ -1197,3 +1197,109 @@ input[type="search"] {
 @media (min-width: 860px) and (max-width: 1399px) {
   nav.tabs a .icono { display: none; }
 }
+
+/* Tema oscuro */
+:root {
+  color-scheme: dark;
+  --papel: #111916;
+  --superficie: #1a2420;
+  --tinta: #e5eee9;
+  --tinta-suave: #a7b8af;
+  --linea: #35463e;
+  --verde: #55c58a;
+  --verde-suave: #203b2e;
+  --ladrillo: #f08080;
+  --ladrillo-suave: #402727;
+  --ambar: #e9c46a;
+  --sombra: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+html, body, .app, .contenido-principal { background: var(--papel); color: var(--tinta); }
+main, h1, h2, h3, p, label, small { color: var(--tinta); }
+h1 { color: #d6eee0; }
+h2 { color: var(--tinta); }
+a { color: var(--verde); }
+
+header.topbar,
+nav.tabs,
+nav.tabs .submenu,
+nav.tabs .submenu a,
+.menu-desplegable .submenu,
+.menu-desplegable .submenu a,
+.ventana-ventas,
+.barra-acciones-ventas,
+.totales-ventas-ventana,
+.tabla-ventas-ventana,
+.tabla-reportes-scroll thead th,
+.menu-cerrar-boton {
+  background: #202d27;
+  color: var(--tinta);
+  border-color: var(--linea);
+}
+header.topbar .salir,
+nav.tabs a,
+nav.tabs a:hover,
+nav.tabs .submenu a,
+.totales-ventas-ventana > div,
+.totales-ventas-ventana strong { color: var(--tinta); }
+nav.tabs a.activo,
+nav.tabs .menu-desplegable.activo > .menu-boton { background: #176b43; color: #fff; }
+nav.tabs a:hover,
+nav.tabs .submenu a:hover,
+nav.tabs .submenu a:focus,
+.proveedor-sugerencia:hover,
+.proveedor-sugerencia.seleccionada,
+.proveedor-sugerencia:focus { background: #2c4036; color: #e9fff2; }
+.menu-desplegable.activo > .menu-boton { color: #fff; }
+
+.tarjeta,
+#proveedores-opciones:not([hidden]) { background: var(--superficie); border-color: var(--linea); }
+.tarjeta h2,
+table.reporte th,
+.tabla-productos th { background: #18583b; color: #f4fff8; }
+.renglon,
+.producto-vendedor-fila,
+nav.tabs a,
+nav.tabs .submenu a { border-color: var(--linea); }
+
+input[type="text"], input[type="search"], input[type="number"], input[type="date"],
+input[type="password"], input[type="tel"], select, textarea {
+  color-scheme: dark;
+  background: #141d19;
+  color: var(--tinta);
+  border-color: #52665b;
+}
+input::placeholder, textarea::placeholder { color: #91a399; opacity: 1; }
+input:focus, select:focus, textarea:focus { outline: 2px solid #55c58a; outline-offset: 1px; }
+
+button, .boton { color: #f4fff8; border-color: #387c59; background: #34483d; }
+button.verde, .boton.verde { background: #176b43; border-color: #258354; color: #fff; }
+button.secundario, .boton.secundario { background: #293831; border-color: #52665b; color: #e5eee9; }
+button.peligro, .boton.peligro { background: #873d3d; border-color: #a85656; color: #fff; }
+.cerrar-sesion { background: #176b43; border-color: #39845e; }
+.menu-movil-boton { background: #176b43; border-color: #6dc994; }
+
+table.reporte,
+.tabla-ventas-ventana table,
+.tabla-productos table { background: var(--superficie); color: var(--tinta); }
+table.reporte th, table.reporte td,
+.tabla-productos th, .tabla-productos td { border-color: var(--linea); }
+table.reporte tbody tr:nth-child(even),
+.tabla-ventas-ventana tbody tr:nth-child(even),
+.tabla-productos tbody tr:nth-child(even),
+.tabla-deudores tbody tr:nth-child(even) { background: #202d27; }
+.tabla-ventas-ventana small,
+.secundario, .descripcion-producto { color: var(--tinta-suave); }
+.filtro-ventas label, .ventana-titulo { background: #29483a; border-color: #466252; }
+.filtro-ventas input { background: #141d19; color: var(--tinta); }
+.campo-porcentaje span { background: #293831; border-color: #52665b; color: var(--tinta); }
+#precio_venta_calculado { background: var(--verde-suave); color: var(--verde); }
+.mensaje.success { background: var(--verde-suave); color: #9ae3b8; border-color: #397254; }
+.mensaje.error { background: var(--ladrillo-suave); color: #ffaaaa; border-color: #855050; }
+.mensaje.informativo { background: #202f38; color: #b9d9eb; border-color: #456273; }
+.aviso-pago { background: #2b2415; color: #f6d982; border-color: #776331; }
+
+@media print {
+  :root { color-scheme: light; }
+  html, body { background: #fff; color: #000; }
+}

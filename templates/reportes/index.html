@@ -17,7 +17,7 @@
 
 <div class="grilla-resumen">
   <div class="tarjeta metrica">
-    <div class="etiqueta">Total vendido</div>
+    <div class="etiqueta">Total vendido · {{ cantidad_ventas }} ventas</div>
     <div class="valor cifra">${{ "%.2f"|format(total_ventas) }}</div>
   </div>
   <div class="tarjeta metrica verde">
@@ -50,6 +50,15 @@
     <div class="renglon"><div class="principal">{{ usuario }} · {{ datos.cantidad }} movimientos</div><div class="monto cifra ladrillo">${{ "%.2f"|format(datos.total) }}</div></div>
   {% else %}
     <p class="vacio">No hay movimientos pagados en efectivo en este período.</p>
+  {% endfor %}
+</div>
+
+<div class="tarjeta">
+  <h2>Ventas por usuario</h2>
+  {% for usuario, datos in ventas_por_usuario.items() %}
+    <div class="renglon"><div class="principal">{{ usuario }} · {{ datos.cantidad }} ventas</div><div class="monto cifra">${{ "%.2f"|format(datos.total) }}</div></div>
+  {% else %}
+    <p class="vacio">No hay ventas registradas en este período.</p>
   {% endfor %}
 </div>
 
@@ -106,18 +115,6 @@
         </tbody>
       </table>
     </div>
-    <script>
-      (function () {
-        var caja = document.getElementById("tabla-ventas");
-        var filas = caja.querySelectorAll("tbody tr");
-        if (filas.length > 5) {
-          var encabezado = caja.querySelector("thead").offsetHeight;
-          var cincoFilas = filas[5].getBoundingClientRect().top
-                         - filas[0].getBoundingClientRect().top;
-          caja.style.maxHeight = (encabezado + cincoFilas + 2) + "px";
-        }
-      })();
-    </script>
   {% else %}
     <p class="vacio">No hay ventas para este rango.</p>
   {% endif %}
