@@ -1,4 +1,4 @@
-# app.py
+﻿# app.py
 #
 # Este es el "corazón" de la aplicación web. Un archivo Flask típico
 # hace tres cosas:
@@ -484,13 +484,21 @@ def create_app():
             hasta = date.fromisoformat(hasta_texto) if hasta_texto else hoy_argentina()
         except ValueError:
             desde, hasta = hoy_argentina(), hoy_argentina()
-        q = Egreso.query.filter(Egreso.fecha >= datetime.combine(desde, datetime.min.time()), Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()))
+        q = Egreso.query.filter(
+            Egreso.fecha >= datetime.combine(desde, datetime.min.time()),
+            Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()),
+            Egreso.categoria.in_(["retiro", "gasto"]),
+            Egreso.usuario_id.is_not(None),
+            Egreso.legacy_retiro_id.is_(None),
+            Egreso.legacy_pago_proveedor_id.is_(None),
+            Egreso.pago_compra_id.is_(None),
+        )
         vendedor_id = request.args.get("usuario_id", type=int)
         if vendedor_id:
             q = q.filter_by(usuario_id=vendedor_id)
         categoria_filtro = request.args.get("categoria", "")
         forma_filtro = request.args.get("forma_pago", "")
-        if categoria_filtro in {"retiro", "gasto", "pago_proveedor"}:
+        if categoria_filtro in {"retiro", "gasto"}:
             q = q.filter_by(categoria=categoria_filtro)
         if forma_filtro in {"efectivo", "transferencia", "otro"}:
             q = q.filter_by(forma_pago=forma_filtro)
@@ -512,6 +520,16 @@ def create_app():
             fila = por_usuario.setdefault(clave, {"total": Decimal("0.00"), "cantidad": 0})
             fila["total"] += e.monto
             fila["cantidad"] += 1
+        egresos_por_usuario = [
+            {
+                "usuario": nombre,
+                "egresos": [
+                    e for e in egresos
+                    if e.usuario and e.usuario.username == nombre
+                ],
+            }
+            for nombre in sorted(por_usuario)
+        ]
         lunes = (hoy_argentina() - timedelta(days=hoy_argentina().weekday()))
         mes = hoy_argentina().replace(day=1)
         total_dia = sum((e.monto for e in egresos if e.fecha.date() == hoy_argentina()), Decimal("0.00"))
@@ -521,6 +539,7 @@ def create_app():
                                desde=desde, hasta=hasta, vendedor_id=vendedor_id,
                                categoria_filtro=categoria_filtro, forma_filtro=forma_filtro,
                                orden=orden,
+                               egresos_por_usuario=egresos_por_usuario,
                                total=sum((e.monto for e in egresos), Decimal("0.00")),
                                por_usuario=por_usuario, total_dia=total_dia,
                                total_semana=total_semana, total_mes=total_mes)
@@ -571,13 +590,21 @@ def create_app():
         if desde > hasta:
             flash("La fecha inicial no puede ser posterior a la fecha final.", "error")
             return redirect(url_for("modulo_egresos"))
-        q = Egreso.query.filter(Egreso.fecha >= datetime.combine(desde, datetime.min.time()), Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()))
+        q = Egreso.query.filter(
+            Egreso.fecha >= datetime.combine(desde, datetime.min.time()),
+            Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()),
+            Egreso.categoria.in_(["retiro", "gasto"]),
+            Egreso.usuario_id.is_not(None),
+            Egreso.legacy_retiro_id.is_(None),
+            Egreso.legacy_pago_proveedor_id.is_(None),
+            Egreso.pago_compra_id.is_(None),
+        )
         usuario_id = request.args.get("usuario_id", type=int)
         categoria = request.args.get("categoria", "")
         forma = request.args.get("forma_pago", "")
         if usuario_id:
             q = q.filter_by(usuario_id=usuario_id)
-        if categoria in {"retiro", "gasto", "pago_proveedor"}:
+        if categoria in {"retiro", "gasto"}:
             q = q.filter_by(categoria=categoria)
         if forma in {"efectivo", "transferencia", "otro"}:
             q = q.filter_by(forma_pago=forma)
