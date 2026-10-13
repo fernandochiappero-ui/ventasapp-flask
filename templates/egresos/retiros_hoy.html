@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}Mis retiros de hoy{% endblock %}
+{% block contenido %}
+<h1>Mis retiros de hoy · {{ hoy.strftime('%d/%m/%Y') }}</h1>
+<a href="{{ url_for('nuevo_egreso') }}" class="boton verde">Registrar retiro o egreso</a>
+<div class="tarjeta">
+  {% for r in retiros_hoy %}
+  <div class="renglon"><div><div class="principal">{{ r.concepto }}</div><div class="secundario">{{ r.fecha.strftime('%H:%M') }}{% if r.observaciones %} · {{ r.observaciones }}{% endif %}</div></div><div class="monto cifra ladrillo">${{ '%.2f'|format(r.monto) }}</div></div>
+  {% else %}<p class="vacio">Todavía no registraste retiros hoy.</p>{% endfor %}
+  {% if retiros_hoy %}<div class="renglon"><div class="principal">Total retirado hoy</div><div class="monto cifra ladrillo">${{ '%.2f'|format(total_retiros_hoy) }}</div></div>{% endif %}
+</div>
+{% endblock %}

@@ -1,12 +1,13 @@
 import os
 import unittest
+from datetime import timedelta
 from decimal import Decimal
 
 os.environ["DATABASE_URL"] = "sqlite://"
 
-from app import create_app
+from app import create_app, hoy_argentina
 from extensions import db
-from models import Usuario, Proveedor, CompraProveedor, PagoCompraProveedor, Egreso, AuditoriaEgreso
+from models import Usuario, Proveedor, CompraProveedor, PagoCompraProveedor, Egreso, AuditoriaEgreso, ahora_argentina
 
 
 class FinanzasTest(unittest.TestCase):
@@ -87,29 +88,29 @@ class FinanzasTest(unittest.TestCase):
 
     def test_08_vendedor_registra_egreso(self):
         self.login("vendedor")
-        response = self.client.post("/egresos", data={"monto": "12.50", "concepto": "Flete", "categoria": "gasto", "forma_pago": "efectivo"})
+        response = self.client.post("/egresos/nuevo", data={"monto": "12.50", "concepto": "Flete", "categoria": "gasto", "forma_pago": "efectivo"})
         self.assertEqual(response.status_code, 302)
         with self.app.app_context(): self.assertEqual(Egreso.query.filter_by(concepto="Flete").one().usuario.username, "vendedor")
 
     def test_09_admin_ve_egresos_de_ambos(self):
-        self.login("vendedor"); self.client.post("/egresos", data={"monto": "10", "concepto": "Vendedor", "categoria": "retiro", "forma_pago": "efectivo"})
-        self.client.get("/logout"); self.login("admin"); self.client.post("/egresos", data={"monto": "20", "concepto": "Admin", "categoria": "gasto", "forma_pago": "efectivo"})
+        self.login("vendedor"); self.client.post("/egresos/nuevo", data={"monto": "10", "concepto": "Vendedor", "categoria": "retiro", "forma_pago": "efectivo"})
+        self.client.get("/logout"); self.login("admin"); self.client.post("/egresos/nuevo", data={"monto": "20", "concepto": "Admin", "categoria": "gasto", "forma_pago": "efectivo"})
         page = self.client.get("/egresos")
         self.assertIn(b"Vendedor", page.data); self.assertIn(b"Admin", page.data)
 
     def test_10_admin_filtra_vendedor(self):
-        self.login("vendedor"); self.client.post("/egresos", data={"monto": "10", "concepto": "Solo vendedor", "categoria": "retiro", "forma_pago": "efectivo"})
+        self.login("vendedor"); self.client.post("/egresos/nuevo", data={"monto": "10", "concepto": "Solo vendedor", "categoria": "retiro", "forma_pago": "efectivo"})
         self.client.get("/logout"); self.login("admin")
         self.assertIn(b"Solo vendedor", self.client.get("/egresos?usuario_id=2").data)
 
     def test_11_pdf_filtra_y_se_descarga(self):
-        self.login("vendedor"); self.client.post("/egresos", data={"monto": "12", "concepto": "Filtro PDF", "categoria": "gasto", "forma_pago": "efectivo"})
+        self.login("vendedor"); self.client.post("/egresos/nuevo", data={"monto": "12", "concepto": "Filtro PDF", "categoria": "gasto", "forma_pago": "efectivo"})
         self.client.get("/logout"); self.login("admin")
         response = self.client.get("/egresos/reporte.pdf?desde=2026-10-01&hasta=2026-10-31")
         self.assertEqual(response.mimetype, "application/pdf"); self.assertEqual(response.status_code, 200)
 
     def test_12_modificar_actualiza_total(self):
-        self.login("vendedor"); self.client.post("/egresos", data={"monto": "12", "concepto": "Cambio", "categoria": "gasto", "forma_pago": "efectivo"})
+        self.login("vendedor"); self.client.post("/egresos/nuevo", data={"monto": "12", "concepto": "Cambio", "categoria": "gasto", "forma_pago": "efectivo"})
         self.client.get("/logout"); self.login("admin")
         with self.app.app_context(): eid = Egreso.query.one().id
         self.client.post(f"/egresos/{eid}/editar", data={"fecha": "2026-10-12", "monto": "33", "concepto": "Cambio", "categoria": "gasto", "forma_pago": "efectivo"})
@@ -125,7 +126,7 @@ class FinanzasTest(unittest.TestCase):
     def test_14_vendedor_no_modifica_egresos_ni_proveedores(self):
         pid = self.proveedor(); self.login("vendedor")
         self.assertEqual(self.client.post(f"/proveedores/{pid}/baja").status_code, 302)
-        self.client.post("/egresos", data={"monto": "12", "concepto": "E", "categoria": "gasto", "forma_pago": "efectivo"})
+        self.client.post("/egresos/nuevo", data={"monto": "12", "concepto": "E", "categoria": "gasto", "forma_pago": "efectivo"})
         with self.app.app_context(): eid = Egreso.query.one().id
         self.assertNotEqual(self.client.get(f"/egresos/{eid}/editar").status_code, 200)
 
@@ -133,6 +134,7 @@ class FinanzasTest(unittest.TestCase):
         self.login("admin")
         self.assertEqual(self.client.get("/retiros").status_code, 302)
         self.assertEqual(self.client.get("/proveedores").status_code, 200)
+        self.assertEqual(self.client.get("/egresos/nuevo").status_code, 200)
         self.assertEqual(self.client.get("/").status_code, 200)
 
     def test_16_pago_de_factura_se_cuenta_una_vez(self):
@@ -140,6 +142,42 @@ class FinanzasTest(unittest.TestCase):
         with self.app.app_context():
             self.assertEqual(Egreso.query.filter_by(categoria="pago_proveedor").count(), 1)
             self.assertEqual(PagoCompraProveedor.query.count(), 1)
+
+    def test_17_vendedor_solo_consulta_retiros_de_hoy(self):
+        self.login("vendedor")
+        self.client.post("/egresos/nuevo", data={"monto": "10", "concepto": "Retiro de hoy", "categoria": "retiro", "forma_pago": "efectivo"})
+        self.client.post("/egresos/nuevo", data={"monto": "5", "concepto": "Gasto de hoy", "categoria": "gasto", "forma_pago": "efectivo"})
+        with self.app.app_context():
+            db.session.add(Egreso(usuario_id=2, fecha=ahora_argentina() - timedelta(days=1), monto=Decimal("8.00"), concepto="Retiro anterior", categoria="retiro", forma_pago="efectivo"))
+            db.session.commit()
+        pagina = self.client.get("/retiros")
+        self.assertIn(b"Retiro de hoy", pagina.data)
+        self.assertNotIn(b"Gasto de hoy", pagina.data)
+        self.assertNotIn(b"Retiro anterior", pagina.data)
+        self.assertEqual(self.client.get("/egresos").status_code, 302)
+
+    def test_18_submenus_de_proveedores_y_usuarios(self):
+        self.login("admin")
+        html = self.client.get("/").data
+        self.assertIn(b"Proveedores", html)
+        self.assertIn(b"Agregar proveedor", html)
+        self.assertIn(b"Registrar compra", html)
+        self.assertIn(b"Compras a proveedores", html)
+        self.assertIn(b"Resumen de egresos", html)
+        self.client.get("/logout")
+        self.login("vendedor")
+        html_vendedor = self.client.get("/").data
+        self.assertIn(b"Proveedores", html_vendedor)
+        self.assertIn(b"Agregar proveedor", html_vendedor)
+        self.assertIn(b"Registrar compra", html_vendedor)
+        self.assertIn(b"Compras a proveedores", html_vendedor)
+        self.assertNotIn(b"Resumen de egresos", html_vendedor)
+
+    def test_19_busqueda_proveedor_presente_en_formulario_compra(self):
+        self.login("vendedor")
+        html = self.client.get("/compras/nueva").data
+        self.assertIn(b"data-url=\"/api/proveedores\"", html)
+        self.assertIn(b"No se encontraron proveedores.", html)
 
 
 if __name__ == "__main__":

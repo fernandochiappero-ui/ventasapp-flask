@@ -700,6 +700,39 @@ nav.tabs a.activo:hover { background: #066428; }
   z-index: 60;
 }
 
+nav.tabs .usuario-menu-legacy { display: none !important; }
+
+#proveedores-opciones:not([hidden]) {
+  display: block;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 4px 0 10px;
+  padding: 4px;
+  border: 1px solid var(--linea);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+.proveedor-sugerencia {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--linea);
+  background: transparent;
+  color: var(--tinta);
+  text-align: left;
+  cursor: pointer;
+}
+
+.proveedor-sugerencia:hover,
+.proveedor-sugerencia.seleccionada,
+.proveedor-sugerencia:focus {
+  background: #cfe4d3;
+  color: #075c28;
+  outline: none;
+}
+
 .menu-desplegable > .menu-boton { height: 100%; }
 .menu-desplegable.activo > .menu-boton { color: #fff; background: var(--verde); }
 

@@ -4,26 +4,125 @@
 <h1>Registrar compra</h1>
 <form method="POST" class="tarjeta">
   <label for="buscar-proveedor">Proveedor *</label>
-  <input id="buscar-proveedor" autocomplete="off" placeholder="Escribí para buscar proveedor" required>
+  <input id="buscar-proveedor" data-url="{{ url_for('buscar_proveedores') }}" data-crear-url="{{ url_for('buscar_proveedores') }}" autocomplete="off" placeholder="Escribí para buscar proveedor" aria-controls="proveedores-opciones" aria-expanded="false" required>
   <input type="hidden" name="proveedor_id" id="proveedor_id" required>
-  <div id="proveedores-opciones" class="tarjeta" hidden></div>
-  <div id="crear-proveedor-rapido" hidden><label>Nuevo proveedor</label><input id="nuevo-proveedor-nombre" maxlength="150"><button type="button" id="crear-proveedor-boton" class="boton secundario">Crear y seleccionar</button><span id="crear-proveedor-error" class="mensaje error"></span></div>
-  <label>Fecha de compra *</label><input type="date" name="fecha" value="{{ hoy.isoformat() }}" required>
-  <label>Número o referencia de factura</label><input name="factura" maxlength="100">
-  <label>Descripción u observaciones</label><input name="descripcion" maxlength="500">
-  <label>Total de factura *</label><input type="number" name="total" min="0.01" step="0.01" required>
-  <label>Importe pagado ahora</label><input type="number" name="pagado" min="0" step="0.01" value="0">
-  <label>Forma de pago *</label><select name="forma_pago" required><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="otro">Otro</option><option value="cuenta_corriente">Cuenta corriente</option></select>
-  <label>Forma del importe pagado ahora, si corresponde</label><select name="forma_pago_inicial"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="otro">Otro</option></select>
+  <div id="proveedores-opciones" role="listbox" aria-live="polite" hidden></div>
+  <div id="crear-proveedor-rapido" hidden><label for="nuevo-proveedor-nombre">No hay coincidencias. Crear proveedor</label><input id="nuevo-proveedor-nombre" maxlength="150"><button type="button" id="crear-proveedor-boton" class="boton secundario">Crear y seleccionar</button><span id="crear-proveedor-error" role="status"></span></div>
+
+  <label for="fecha">Fecha de compra *</label><input id="fecha" type="date" name="fecha" value="{{ hoy.isoformat() }}" required>
+  <label for="factura">Número o referencia de factura</label><input id="factura" name="factura" maxlength="100">
+  <label for="descripcion">Descripción u observaciones</label><input id="descripcion" name="descripcion" maxlength="500">
+  <label for="total">Total de factura *</label><input id="total" type="number" name="total" min="0.01" step="0.01" required>
+  <label for="pagado">Importe pagado ahora</label><input id="pagado" type="number" name="pagado" min="0" step="0.01" value="0">
+  <label for="forma_pago">Forma de pago de la compra *</label><select id="forma_pago" name="forma_pago" required><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="otro">Otro</option><option value="cuenta_corriente">Cuenta corriente</option></select>
+  <label for="forma_pago_inicial">Forma del importe pagado ahora, si corresponde</label><select id="forma_pago_inicial" name="forma_pago_inicial"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="otro">Otro</option></select>
   <button class="ancho verde">Registrar compra</button>
 </form>
 <script>
 (() => {
- const input=document.getElementById('buscar-proveedor'), hidden=document.getElementById('proveedor_id'), lista=document.getElementById('proveedores-opciones'); let timer;
- const rapido=document.getElementById('crear-proveedor-rapido'), nombre=document.getElementById('nuevo-proveedor-nombre'), error=document.getElementById('crear-proveedor-error');
- input.addEventListener('input',()=>{hidden.value=''; clearTimeout(timer); timer=setTimeout(async()=>{const r=await fetch('/api/proveedores?q='+encodeURIComponent(input.value)); const datos=await r.json(); lista.replaceChildren(); lista.hidden=!input.value; rapido.hidden=!input.value; if(!datos.length){lista.textContent='No hay coincidencias.'; return;} datos.forEach(p=>{const b=document.createElement('button'); b.type='button'; b.className='boton secundario'; b.textContent=p.nombre; b.addEventListener('click',()=>{input.value=p.nombre; hidden.value=p.id; lista.hidden=true; rapido.hidden=true;}); lista.append(b);});},120);});
- document.getElementById('crear-proveedor-boton').addEventListener('click',async()=>{error.textContent=''; const r=await fetch('/api/proveedores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre:nombre.value})}); const dato=await r.json(); if(!r.ok){error.textContent=dato.error; return;} input.value=dato.nombre; hidden.value=dato.id; lista.hidden=true; rapido.hidden=true;});
- input.addEventListener('keydown',e=>{if(e.key==='ArrowDown'){lista.querySelector('button')?.focus();} });
+  const input = document.getElementById("buscar-proveedor");
+  const hidden = document.getElementById("proveedor_id");
+  const lista = document.getElementById("proveedores-opciones");
+  const rapido = document.getElementById("crear-proveedor-rapido");
+  const nombreNuevo = document.getElementById("nuevo-proveedor-nombre");
+  const error = document.getElementById("crear-proveedor-error");
+  let timer = null;
+  let solicitud = 0;
+  let seleccion = -1;
+
+  const cerrar = () => {
+    lista.hidden = true;
+    rapido.hidden = true;
+    input.setAttribute("aria-expanded", "false");
+    seleccion = -1;
+  };
+  const elegir = (proveedor) => {
+    input.value = proveedor.nombre;
+    hidden.value = proveedor.id;
+    cerrar();
+  };
+  const mostrarSinResultados = () => {
+    const mensaje = document.createElement("div");
+    mensaje.className = "vacio";
+    mensaje.textContent = "No se encontraron proveedores.";
+    lista.append(mensaje);
+  };
+
+  input.addEventListener("input", () => {
+    hidden.value = "";
+    error.textContent = "";
+    const numeroSolicitud = ++solicitud;
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const termino = input.value.trim();
+      lista.replaceChildren();
+      if (!termino) { cerrar(); return; }
+      lista.hidden = false;
+      rapido.hidden = true;
+      input.setAttribute("aria-expanded", "true");
+      lista.textContent = "Buscando proveedores…";
+      try {
+        const respuesta = await fetch(`${input.dataset.url}?q=${encodeURIComponent(termino)}`, {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+        });
+        if (!respuesta.ok) throw new Error("No se pudo consultar la lista de proveedores.");
+        const proveedores = await respuesta.json();
+        if (numeroSolicitud !== solicitud) return;
+        lista.replaceChildren();
+        if (!proveedores.length) {
+          mostrarSinResultados();
+          nombreNuevo.value = termino;
+          rapido.hidden = false;
+          return;
+        }
+        proveedores.forEach((proveedor) => {
+          const boton = document.createElement("button");
+          boton.type = "button";
+          boton.className = "proveedor-sugerencia";
+          boton.setAttribute("role", "option");
+          boton.textContent = proveedor.nombre;
+          boton.addEventListener("click", () => elegir(proveedor));
+          lista.append(boton);
+        });
+      } catch (errorBusqueda) {
+        if (numeroSolicitud !== solicitud) return;
+        lista.replaceChildren();
+        const mensaje = document.createElement("div");
+        mensaje.className = "mensaje error";
+        mensaje.textContent = errorBusqueda.message || "Error al buscar proveedores.";
+        lista.append(mensaje);
+      }
+    }, 150);
+  });
+
+  input.addEventListener("keydown", (evento) => {
+    const opciones = [...lista.querySelectorAll("button.proveedor-sugerencia")];
+    if (evento.key === "ArrowDown" && opciones.length) {
+      evento.preventDefault(); seleccion = (seleccion + 1) % opciones.length;
+    } else if (evento.key === "ArrowUp" && opciones.length) {
+      evento.preventDefault(); seleccion = seleccion <= 0 ? opciones.length - 1 : seleccion - 1;
+    } else if (evento.key === "Enter" && seleccion >= 0 && opciones[seleccion]) {
+      evento.preventDefault(); opciones[seleccion].click();
+    } else if (evento.key === "Escape") { cerrar(); return; }
+    opciones.forEach((opcion, indice) => opcion.classList.toggle("seleccionada", indice === seleccion));
+  });
+
+  document.getElementById("crear-proveedor-boton").addEventListener("click", async () => {
+    error.textContent = "";
+    try {
+      const respuesta = await fetch(input.dataset.crearUrl, {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+        body: JSON.stringify({ nombre: nombreNuevo.value }),
+      });
+      const datos = await respuesta.json();
+      if (!respuesta.ok) throw new Error(datos.error || "No se pudo crear el proveedor.");
+      elegir(datos);
+    } catch (errorCreacion) {
+      error.textContent = errorCreacion.message || "No se pudo crear el proveedor.";
+    }
+  });
 })();
 </script>
 {% endblock %}

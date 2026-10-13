@@ -1,32 +1,31 @@
 {% extends "base.html" %}
-{% block titulo %}Egresos y retiros{% endblock %}
+{% block titulo %}Resumen de egresos{% endblock %}
 {% block contenido %}
-<h1>{{ 'Resumen de egresos' if current_user.es_administrador else 'Mis egresos y retiros' }}</h1>
-<form method="POST" class="tarjeta">
-  <h2>Registrar movimiento</h2>
-  <label>Importe *</label><input type="number" name="monto" min="0.01" step="0.01" required>
-  <label>Concepto *</label><input name="concepto" maxlength="300" required>
-  <label>Categoría *</label><select name="categoria"><option value="retiro">Retiro</option><option value="gasto">Gasto</option></select>
-  <label>Forma de pago *</label><select name="forma_pago"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="otro">Otro</option></select>
-  <label>Observaciones</label><input name="observaciones" maxlength="500">
-  <button class="ancho verde">Registrar</button>
-</form>
+<h1>Resumen de egresos</h1>
+
 <form method="GET" class="rango-fechas">
-  <div><label>Desde</label><input type="date" name="desde" value="{{ desde.isoformat() }}"></div><div><label>Hasta</label><input type="date" name="hasta" value="{{ hasta.isoformat() }}"></div>
-  {% if current_user.es_administrador %}<div><label>Vendedor</label><select name="usuario_id"><option value="">Todos</option>{% for u in usuarios %}<option value="{{ u.id }}" {{ 'selected' if vendedor_id == u.id }}>{{ u.username }}</option>{% endfor %}</select></div>{% endif %}
-  <div><label>Categoría</label><select name="categoria"><option value="">Todas</option><option value="retiro" {{ 'selected' if categoria_filtro == 'retiro' }}>Retiro</option><option value="gasto" {{ 'selected' if categoria_filtro == 'gasto' }}>Gasto</option><option value="pago_proveedor" {{ 'selected' if categoria_filtro == 'pago_proveedor' }}>Pago a proveedor</option></select></div>
-  <div><label>Forma de pago</label><select name="forma_pago"><option value="">Todas</option><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="otro">Otro</option></select></div>
-  <div><label>Ordenar</label><select name="orden"><option value="fecha" {{ 'selected' if orden == 'fecha' }}>Fecha</option><option value="importe" {{ 'selected' if orden == 'importe' }}>Importe</option><option value="vendedor" {{ 'selected' if orden == 'vendedor' }}>Vendedor</option><option value="categoria" {{ 'selected' if orden == 'categoria' }}>Categoría</option></select></div>
-  <button class="boton verde">Filtrar</button>
+  <div><label for="desde">Desde</label><input id="desde" type="date" name="desde" value="{{ desde.isoformat() }}"></div>
+  <div><label for="hasta">Hasta</label><input id="hasta" type="date" name="hasta" value="{{ hasta.isoformat() }}"></div>
+  <div><label for="usuario_id">Vendedor</label><select id="usuario_id" name="usuario_id"><option value="">Todos</option>{% for u in usuarios %}<option value="{{ u.id }}" {{ 'selected' if vendedor_id == u.id }}>{{ u.username }}</option>{% endfor %}</select></div>
+  <div><label for="categoria">Categoría</label><select id="categoria" name="categoria"><option value="">Todas</option><option value="retiro" {{ 'selected' if categoria_filtro == 'retiro' }}>Retiro</option><option value="gasto" {{ 'selected' if categoria_filtro == 'gasto' }}>Gasto</option><option value="pago_proveedor" {{ 'selected' if categoria_filtro == 'pago_proveedor' }}>Pago a proveedor</option></select></div>
+  <div><label for="forma_pago">Forma de pago</label><select id="forma_pago" name="forma_pago"><option value="">Todas</option><option value="efectivo" {{ 'selected' if forma_filtro == 'efectivo' }}>Efectivo</option><option value="transferencia" {{ 'selected' if forma_filtro == 'transferencia' }}>Transferencia</option><option value="otro" {{ 'selected' if forma_filtro == 'otro' }}>Otro</option></select></div>
+  <div><label for="orden">Ordenar</label><select id="orden" name="orden"><option value="fecha" {{ 'selected' if orden == 'fecha' }}>Fecha</option><option value="importe" {{ 'selected' if orden == 'importe' }}>Importe</option><option value="vendedor" {{ 'selected' if orden == 'vendedor' }}>Vendedor</option><option value="categoria" {{ 'selected' if orden == 'categoria' }}>Categoría</option></select></div>
+  <button class="boton verde">Aplicar filtros</button>
 </form>
+
 <div class="grilla-resumen">
   <div class="tarjeta metrica"><div class="etiqueta">Hoy</div><div class="valor cifra">${{ '%.2f'|format(total_dia) }}</div></div>
   <div class="tarjeta metrica"><div class="etiqueta">Esta semana</div><div class="valor cifra">${{ '%.2f'|format(total_semana) }}</div></div>
   <div class="tarjeta metrica"><div class="etiqueta">Este mes</div><div class="valor cifra">${{ '%.2f'|format(total_mes) }}</div></div>
 </div>
-<div class="tarjeta"><div class="renglon"><div class="principal">Total filtrado ({{ egresos|length }} movimientos)</div><div class="monto cifra ladrillo">${{ '%.2f'|format(total) }}</div></div>
-{% if current_user.es_administrador %}<a class="boton secundario" href="{{ url_for('egresos_pdf', desde=desde.isoformat(), hasta=hasta.isoformat(), usuario_id=vendedor_id or '', categoria=categoria_filtro, forma_pago=forma_filtro) }}">Descargar PDF</a>{% endif %}
-{% if current_user.es_administrador %}<h2>Totales por vendedor</h2>{% for nombre, datos in por_usuario.items() %}<div class="renglon"><div class="principal">{{ nombre }} · {{ datos.cantidad }} movimientos</div><div class="monto cifra">${{ '%.2f'|format(datos.total) }}</div></div>{% endfor %}{% endif %}
-{% for e in egresos %}<div class="renglon"><div><div class="principal">{{ e.concepto }} · {{ {'pago_proveedor':'Pago a proveedor','retiro':'Retiro','gasto':'Gasto'}.get(e.categoria,e.categoria|title) }}</div><div class="secundario">{{ e.fecha.strftime('%d/%m/%Y %H:%M') }} · {{ e.usuario.username if e.usuario else 'Sistema' }} · {{ e.forma_pago }}{% if e.modificado %} · Modificado por {{ e.modificado_por.username }} {{ e.modificado.strftime('%d/%m/%Y %H:%M') }}{% endif %}</div></div><div class="acciones-producto"><div class="monto cifra ladrillo">${{ '%.2f'|format(e.monto) }}</div>{% if current_user.es_administrador and e.categoria != 'pago_proveedor' %}<a class="boton secundario" href="{{ url_for('editar_egreso', egreso_id=e.id) }}">Editar</a>{% endif %}</div></div>{% endfor %}
-{% if not egresos %}<p class="vacio">No hay egresos con estos filtros.</p>{% endif %}</div>
+
+<div class="tarjeta">
+  <div class="renglon"><div class="principal">Total filtrado · {{ egresos|length }} movimientos</div><div class="monto cifra ladrillo">${{ '%.2f'|format(total) }}</div></div>
+  <a class="boton secundario" href="{{ url_for('egresos_pdf', desde=desde.isoformat(), hasta=hasta.isoformat(), usuario_id=vendedor_id or '', categoria=categoria_filtro, forma_pago=forma_filtro) }}">Descargar PDF</a>
+  <h2>Totales por vendedor</h2>
+  {% for nombre, datos in por_usuario.items() %}<div class="renglon"><div class="principal">{{ nombre }} · {{ datos.cantidad }} movimientos</div><div class="monto cifra">${{ '%.2f'|format(datos.total) }}</div></div>{% endfor %}
+  {% for e in egresos %}
+  <div class="renglon"><div><div class="principal">{{ e.concepto }} · {{ {'pago_proveedor':'Pago a proveedor','retiro':'Retiro','gasto':'Gasto'}.get(e.categoria,e.categoria|title) }}</div><div class="secundario">{{ e.fecha.strftime('%d/%m/%Y %H:%M') }} · {{ e.usuario.username if e.usuario else 'Sistema' }} · {{ e.forma_pago }}{% if e.modificado %} · Modificado por {{ e.modificado_por.username }} {{ e.modificado.strftime('%d/%m/%Y %H:%M') }}{% endif %}</div></div><div class="acciones-producto"><div class="monto cifra ladrillo">${{ '%.2f'|format(e.monto) }}</div>{% if e.categoria != 'pago_proveedor' %}<a class="boton secundario" href="{{ url_for('editar_egreso', egreso_id=e.id) }}">Editar</a>{% endif %}</div></div>
+  {% else %}<p class="vacio">No hay egresos con estos filtros.</p>{% endfor %}
+</div>
 {% endblock %}

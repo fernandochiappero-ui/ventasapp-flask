@@ -10,8 +10,8 @@
      bien en un celular (y no como una web de escritorio achicada) #}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}VERDULERIA EL GAUCHITO{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='12') }}">
-  <script src="{{ url_for('static', filename='js/app.js', v='18') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='14') }}">
+  <script src="{{ url_for('static', filename='js/app.js', v='19') }}" defer></script>
 </head>
 <body>
   <div class="app">
@@ -63,14 +63,21 @@
       <a href="{{ url_for('reportes') }}" class="{{ 'activo' if request.endpoint == 'reportes' }}">
         <span class="icono">📊</span>Reportes
       </a>
-      <a href="{{ url_for('nuevo_usuario') }}" class="{{ 'activo' if request.endpoint == 'nuevo_usuario' }}">
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nuevo_usuario','modulo_egresos','egresos_pdf','editar_egreso'] }}">
+        <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">Usuarios</a>
+        <div class="submenu">
+          <a href="{{ url_for('nuevo_usuario') }}">Administrar usuarios</a>
+          <a href="{{ url_for('modulo_egresos') }}">Resumen de egresos</a>
+        </div>
+      </div>
+      <a href="{{ url_for('nuevo_usuario') }}" class="usuario-menu-legacy {{ 'activo' if request.endpoint == 'nuevo_usuario' }}">
         <span class="icono">👤</span>Usuarios
       </a>
       {% else %}
       <a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">
         <span class="icono">🏠</span>Inicio
       </a>
-      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nueva_venta','nuevo_cliente','registrar_pago_vendedor','retiros','editar_proveedor','listar_proveedores','nuevo_proveedor','nueva_compra_proveedor','listar_compras_proveedor','modulo_egresos'] }}">
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nueva_venta','nuevo_cliente','registrar_pago_vendedor','retiros','nuevo_egreso','editar_proveedor','listar_proveedores','nuevo_proveedor','nueva_compra_proveedor','listar_compras_proveedor'] }}">
         <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
           <span class="icono">📁</span>Archivos
         </a>
@@ -82,10 +89,16 @@
         </div>
       </div>
       {% endif %}
-      <a href="{{ url_for('listar_proveedores') }}">Proveedores</a>
-      <a href="{{ url_for('nueva_compra_proveedor') }}">Registrar compra</a>
-      <a href="{{ url_for('listar_compras_proveedor') }}">Compras a proveedores</a>
-      <a href="{{ url_for('modulo_egresos') }}">{{ 'Resumen de egresos' if current_user.es_administrador else 'Mis egresos y retiros' }}</a>
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['listar_proveedores','nuevo_proveedor','modificar_proveedor','desactivar_proveedor','nueva_compra_proveedor','listar_compras_proveedor','pagar_compra_proveedor'] }}">
+        <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">Proveedores</a>
+        <div class="submenu">
+          <a href="{{ url_for('nuevo_proveedor') }}">Agregar proveedor</a>
+          <a href="{{ url_for('nueva_compra_proveedor') }}">Registrar compra</a>
+          <a href="{{ url_for('listar_compras_proveedor') }}">Compras a proveedores</a>
+        </div>
+      </div>
+      <a href="{{ url_for('nuevo_egreso') }}" class="{{ 'activo' if request.endpoint == 'nuevo_egreso' }}">Registrar movimiento</a>
+      {% if current_user.es_vendedor %}<a href="{{ url_for('retiros') }}" class="{{ 'activo' if request.endpoint == 'retiros' }}">Retiro del día</a>{% endif %}
       <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nuevo_producto_almacen','buscar_productos_almacen','imprimir_lista_precios'] }}">
         <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
           <span class="icono">📦</span>Productos de Almacén
