@@ -759,7 +759,9 @@ def create_app():
         ventas_hoy = Venta.query.filter_by(fecha=hoy).all()
         totales = totales_por_forma(ventas_hoy)
         total_hoy = round(sum(v.monto for v in ventas_hoy), 2)
-        total_vendido_hoy = round(
+        # Ventas de balanza: total bruto de ventas en todos los medios de pago.
+        # Efectivo disponible: se descuentan los medios que no ingresan como efectivo.
+        efectivo_disponible_hoy = round(
             total_hoy
             - totales["cuenta_corriente"]
             - totales["tarjeta_qr"]
@@ -782,7 +784,7 @@ def create_app():
                 hoy=hoy,
                 ventas_hoy=ventas_hoy,
                 total_hoy=total_hoy,
-                total_vendido_hoy=total_vendido_hoy,
+                efectivo_disponible_hoy=efectivo_disponible_hoy,
                 efectivo_hoy=totales["efectivo"],
                 cuenta_hoy=totales["cuenta_corriente"],
                 tarjeta_hoy=totales["tarjeta_qr"],
@@ -801,38 +803,16 @@ def create_app():
         )
         deuda_total = round(sum(c.saldo for c in deudores), 2)
 
-        inicio_hoy = datetime.combine(hoy, datetime.min.time())
-        fin_hoy = datetime.combine(hoy + timedelta(days=1), datetime.min.time())
-        egresos_efectivo_hoy = sum(
-            (
-                egreso.monto for egreso in Egreso.query.filter(
-                    Egreso.fecha >= inicio_hoy,
-                    Egreso.fecha < fin_hoy,
-                    Egreso.categoria.in_(["retiro", "gasto"]),
-                    Egreso.forma_pago == "efectivo",
-                    Egreso.usuario_id.is_not(None),
-                    Egreso.legacy_retiro_id.is_(None),
-                    Egreso.legacy_pago_proveedor_id.is_(None),
-                    Egreso.pago_compra_id.is_(None),
-                ).all()
-            ),
-            Decimal("0.00"),
-        )
-        efectivo_real_hoy = round(
-            Decimal(str(total_vendido_hoy)) - egresos_efectivo_hoy, 2
-        )
-
         return render_template(
             "dashboard.html",
             hoy=hoy,
             ventas_hoy=ventas_hoy,
             total_hoy=total_hoy,
-            total_vendido_hoy=total_vendido_hoy,
+            efectivo_disponible_hoy=efectivo_disponible_hoy,
             efectivo_hoy=totales["efectivo"],
             cuenta_hoy=totales["cuenta_corriente"],
             tarjeta_hoy=totales["tarjeta_qr"],
             transferencia_hoy=totales["transferencia"],
-            efectivo_real_hoy=efectivo_real_hoy,
             deudores=deudores[:5],
             deuda_total=deuda_total,
             cantidad_deudores=len(deudores),
@@ -1997,12 +1977,13 @@ def create_app():
         total_cuenta = totales["cuenta_corriente"]
         total_tarjeta = totales["tarjeta_qr"]
         total_transferencia = totales["transferencia"]
+        # Efectivo disponible = ventas brutas de balanza menos formas no efectivo.
         efectivo_ventas = round(
             total_ventas - total_cuenta - total_tarjeta - total_transferencia, 2
         )
 
-        # El efectivo disponible descuenta los egresos manuales pagados en efectivo.
-        # Los pagos por transferencia/tarjeta ya están separados por forma de venta.
+        # Los egresos se listan por usuario por separado; no modifican el efectivo
+        # disponible de ventas de balanza.
         inicio_periodo = datetime.combine(desde, datetime.min.time())
         fin_periodo = datetime.combine(hasta + timedelta(days=1), datetime.min.time())
         movimientos_efectivo = Egreso.query.filter(
@@ -2018,9 +1999,7 @@ def create_app():
         egresos_efectivo = sum(
             (movimiento.monto for movimiento in movimientos_efectivo), Decimal("0.00")
         )
-        efectivo_disponible = round(
-            Decimal(str(efectivo_ventas)) - egresos_efectivo, 2
-        )
+        efectivo_disponible = efectivo_ventas
         egresos_efectivo_por_usuario = {}
         for movimiento in movimientos_efectivo:
             nombre_usuario = movimiento.usuario.username
@@ -2053,10 +2032,8 @@ def create_app():
             desde=desde,
             hasta=hasta,
             total_ventas=total_ventas,
-            total_vendido=efectivo_ventas,
             cantidad_ventas=len(ventas),
             total_efectivo=efectivo_disponible,
-            efectivo_ventas=efectivo_ventas,
             egresos_efectivo=egresos_efectivo,
             egresos_efectivo_por_usuario=egresos_efectivo_por_usuario,
             total_cuenta=total_cuenta,

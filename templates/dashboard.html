@@ -5,8 +5,12 @@
 
 <div class="grilla-resumen">
   <div class="tarjeta metrica">
-    <div class="etiqueta">Ventas en efectivo</div>
-    <div class="valor cifra">${{ "%.2f"|format(total_vendido_hoy) }}</div>
+    <div class="etiqueta">Ventas de Balanza</div>
+    <div class="valor cifra">${{ "%.2f"|format(total_hoy) }}</div>
+  </div>
+  <div class="tarjeta metrica verde">
+    <div class="etiqueta">Efectivo disponible</div>
+    <div class="valor cifra">${{ "%.2f"|format(efectivo_disponible_hoy) }}</div>
   </div>
   <div class="tarjeta metrica">
     <div class="etiqueta">Tarjeta / QR</div>
@@ -20,10 +24,6 @@
     <div class="etiqueta">A cuenta corriente</div>
     <div class="valor cifra">${{ "%.2f"|format(cuenta_hoy) }}</div>
   </div>
-  <div class="tarjeta metrica verde">
-    <div class="etiqueta">Efectivo disponible</div>
-    <div class="valor cifra">${{ "%.2f"|format(efectivo_real_hoy) }}</div>
-  </div>  
 </div>
 
 <a href="{{ url_for('nueva_venta') }}" class="boton verde ancho">+ Cargar venta</a>
