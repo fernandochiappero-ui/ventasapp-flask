@@ -544,6 +544,14 @@ table.reporte td.num, table.reporte th.num { text-align: right; }
 }
 .rango-fechas > div { flex: 1; min-width: 130px; }
 .rango-fechas label { margin-top: 0; }
+.acciones-filtros-egresos {
+  display: flex;
+  flex: 1 1 260px;
+  gap: 8px;
+  align-items: end;
+  justify-content: flex-end;
+}
+.acciones-filtros-egresos .boton { margin: 0; white-space: nowrap; }
 
 .vacio {
   text-align: center;
@@ -936,6 +944,11 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
   .filtro-ventas input { flex: 1; width: auto; }
   .totales-ventas-ventana { justify-content: space-between; gap: 8px; }
   .totales-ventas-ventana > div { min-width: 0; font-size: 0.78rem; }
+}
+
+@media (max-width: 650px) {
+  .acciones-filtros-egresos { flex-basis: 100%; justify-content: stretch; }
+  .acciones-filtros-egresos .boton { flex: 1; }
 }
 
 @media (min-width: 860px) {

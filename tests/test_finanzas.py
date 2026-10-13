@@ -179,6 +179,22 @@ class FinanzasTest(unittest.TestCase):
         self.assertIn(b"data-url=\"/api/proveedores\"", html)
         self.assertIn(b"No se encontraron proveedores.", html)
 
+    def test_20_menu_por_rol_y_resumen_arranca_con_fecha_de_hoy(self):
+        self.login("admin")
+        html_admin = self.client.get("/").data
+        self.assertNotIn(b">Cta. Cte.<", html_admin)
+        self.assertNotIn(b"Registrar movimiento", html_admin)
+        resumen = self.client.get("/egresos").data
+        fecha = hoy_argentina().isoformat().encode()
+        self.assertIn(b'name="desde" value="' + fecha + b'"', resumen)
+        self.assertIn(b'name="hasta" value="' + fecha + b'"', resumen)
+        self.assertIn(b'formaction="/egresos/reporte.pdf"', resumen)
+        self.client.get("/logout")
+        self.login("vendedor")
+        html_vendedor = self.client.get("/").data
+        self.assertIn(b"Registrar movimiento", html_vendedor)
+        self.assertNotIn(b"Retiro del d", html_vendedor)
+
 
 if __name__ == "__main__":
     unittest.main()

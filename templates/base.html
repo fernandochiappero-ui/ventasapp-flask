@@ -10,7 +10,7 @@
      bien en un celular (y no como una web de escritorio achicada) #}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}VERDULERIA EL GAUCHITO{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='14') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='15') }}">
   <script src="{{ url_for('static', filename='js/app.js', v='19') }}" defer></script>
 </head>
 <body>
@@ -35,34 +35,19 @@
     <nav class="tabs" id="menu-principal">
       <button type="button" id="menu-movil-cerrar" class="menu-cerrar-boton" aria-label="Cerrar menú">✕</button>
       {% if current_user.es_administrador %}
-      <a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">
-        <span class="icono">🏠</span>Inicio
-      </a>
+      <a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">Inicio</a>
       <div class="menu-desplegable {{ 'activo' if request.endpoint in ['listar_clientes','nuevo_cliente','editar_cliente','cuenta_corriente_index','cuenta_corriente_detalle'] }}">
-        <a href="{{ url_for('listar_clientes') }}" class="menu-boton" aria-haspopup="true" aria-expanded="false">
-          <span class="icono">👥</span>Clientes
-        </a>
+        <a href="{{ url_for('listar_clientes') }}" class="menu-boton" aria-haspopup="true" aria-expanded="false">Clientes</a>
         <div class="submenu">
           <a href="{{ url_for('listar_clientes') }}">Administrar clientes</a>
           <a href="{{ url_for('cuenta_corriente_index') }}">Cuentas corrientes de clientes</a>
           <a href="{{ url_for('cuenta_corriente_index') }}">Resumen de cuentas corrientes</a>
         </div>
       </div>
-      <a href="{{ url_for('listar_ventas') }}" class="{{ 'activo' if request.endpoint in ['listar_ventas','nueva_venta'] }}">
-        <span class="icono">🧾</span>Ventas
-      </a>
-      <a href="{{ url_for('cuenta_corriente_index') }}" class="{{ 'activo' if request.endpoint in ['cuenta_corriente_index','cuenta_corriente_detalle'] }}">
-        <span class="icono">📒</span>Cta. Cte.
-      </a>
-      <a href="{{ url_for('registrar_pago_vendedor') }}" class="{{ 'activo' if request.endpoint == 'registrar_pago_vendedor' }}">
-        <span class="icono">💵</span>Registrar pagos
-      </a>
-      <a href="{{ url_for('lista_pagos_recibidos') }}" class="{{ 'activo' if request.endpoint == 'lista_pagos_recibidos' }}">
-        <span class="icono">🔔</span>Pagos recibidos
-      </a>
-      <a href="{{ url_for('reportes') }}" class="{{ 'activo' if request.endpoint == 'reportes' }}">
-        <span class="icono">📊</span>Reportes
-      </a>
+      <a href="{{ url_for('listar_ventas') }}" class="{{ 'activo' if request.endpoint in ['listar_ventas','nueva_venta'] }}">Ventas</a>
+      <a href="{{ url_for('registrar_pago_vendedor') }}" class="{{ 'activo' if request.endpoint == 'registrar_pago_vendedor' }}">Registrar pagos</a>
+      <a href="{{ url_for('lista_pagos_recibidos') }}" class="{{ 'activo' if request.endpoint == 'lista_pagos_recibidos' }}">Pagos recibidos</a>
+      <a href="{{ url_for('reportes') }}" class="{{ 'activo' if request.endpoint == 'reportes' }}">Reportes</a>
       <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nuevo_usuario','modulo_egresos','egresos_pdf','editar_egreso'] }}">
         <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">Usuarios</a>
         <div class="submenu">
@@ -70,22 +55,16 @@
           <a href="{{ url_for('modulo_egresos') }}">Resumen de egresos</a>
         </div>
       </div>
-      <a href="{{ url_for('nuevo_usuario') }}" class="usuario-menu-legacy {{ 'activo' if request.endpoint == 'nuevo_usuario' }}">
-        <span class="icono">👤</span>Usuarios
-      </a>
+      <a href="{{ url_for('nuevo_usuario') }}" class="usuario-menu-legacy {{ 'activo' if request.endpoint == 'nuevo_usuario' }}">Usuarios</a>
       {% else %}
-      <a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">
-        <span class="icono">🏠</span>Inicio
-      </a>
-      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nueva_venta','nuevo_cliente','registrar_pago_vendedor','retiros','nuevo_egreso','editar_proveedor','listar_proveedores','nuevo_proveedor','nueva_compra_proveedor','listar_compras_proveedor'] }}">
-        <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
-          <span class="icono">📁</span>Archivos
-        </a>
+      <a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">Inicio</a>
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nueva_venta','nuevo_cliente','registrar_pago_vendedor','retiros','nuevo_egreso'] }}">
+        <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">Archivos</a>
         <div class="submenu">
-          <a href="{{ url_for('nueva_venta') }}">🧾 Cargar venta</a>
-          <a href="{{ url_for('nuevo_cliente', volver='ventas') }}">👤 Agregar cliente</a>
-          <a href="{{ url_for('registrar_pago_vendedor') }}">💵 Registrar pago</a>
-          <a href="{{ url_for('retiros') }}">💸 Retiros</a>
+          <a href="{{ url_for('nueva_venta') }}">Cargar venta</a>
+          <a href="{{ url_for('nuevo_cliente', volver='ventas') }}">Agregar cliente</a>
+          <a href="{{ url_for('registrar_pago_vendedor') }}">Registrar pago</a>
+          <a href="{{ url_for('retiros') }}">Retiros</a>
         </div>
       </div>
       {% endif %}
@@ -97,8 +76,9 @@
           <a href="{{ url_for('listar_compras_proveedor') }}">Compras a proveedores</a>
         </div>
       </div>
+      {% if current_user.es_vendedor %}
       <a href="{{ url_for('nuevo_egreso') }}" class="{{ 'activo' if request.endpoint == 'nuevo_egreso' }}">Registrar movimiento</a>
-      {% if current_user.es_vendedor %}<a href="{{ url_for('retiros') }}" class="{{ 'activo' if request.endpoint == 'retiros' }}">Retiro del día</a>{% endif %}
+      {% endif %}
       <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nuevo_producto_almacen','buscar_productos_almacen','imprimir_lista_precios'] }}">
         <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
           <span class="icono">📦</span>Productos de Almacén

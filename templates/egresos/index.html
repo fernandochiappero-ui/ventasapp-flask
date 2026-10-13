@@ -10,7 +10,10 @@
   <div><label for="categoria">Categoría</label><select id="categoria" name="categoria"><option value="">Todas</option><option value="retiro" {{ 'selected' if categoria_filtro == 'retiro' }}>Retiro</option><option value="gasto" {{ 'selected' if categoria_filtro == 'gasto' }}>Gasto</option><option value="pago_proveedor" {{ 'selected' if categoria_filtro == 'pago_proveedor' }}>Pago a proveedor</option></select></div>
   <div><label for="forma_pago">Forma de pago</label><select id="forma_pago" name="forma_pago"><option value="">Todas</option><option value="efectivo" {{ 'selected' if forma_filtro == 'efectivo' }}>Efectivo</option><option value="transferencia" {{ 'selected' if forma_filtro == 'transferencia' }}>Transferencia</option><option value="otro" {{ 'selected' if forma_filtro == 'otro' }}>Otro</option></select></div>
   <div><label for="orden">Ordenar</label><select id="orden" name="orden"><option value="fecha" {{ 'selected' if orden == 'fecha' }}>Fecha</option><option value="importe" {{ 'selected' if orden == 'importe' }}>Importe</option><option value="vendedor" {{ 'selected' if orden == 'vendedor' }}>Vendedor</option><option value="categoria" {{ 'selected' if orden == 'categoria' }}>Categoría</option></select></div>
-  <button class="boton verde">Aplicar filtros</button>
+  <div class="acciones-filtros-egresos">
+    <button class="boton verde" type="submit">Aplicar filtros</button>
+    <button class="boton secundario" type="submit" formaction="{{ url_for('egresos_pdf') }}" formmethod="get">Descargar PDF</button>
+  </div>
 </form>
 
 <div class="grilla-resumen">
@@ -21,7 +24,6 @@
 
 <div class="tarjeta">
   <div class="renglon"><div class="principal">Total filtrado · {{ egresos|length }} movimientos</div><div class="monto cifra ladrillo">${{ '%.2f'|format(total) }}</div></div>
-  <a class="boton secundario" href="{{ url_for('egresos_pdf', desde=desde.isoformat(), hasta=hasta.isoformat(), usuario_id=vendedor_id or '', categoria=categoria_filtro, forma_pago=forma_filtro) }}">Descargar PDF</a>
   <h2>Totales por vendedor</h2>
   {% for nombre, datos in por_usuario.items() %}<div class="renglon"><div class="principal">{{ nombre }} · {{ datos.cantidad }} movimientos</div><div class="monto cifra">${{ '%.2f'|format(datos.total) }}</div></div>{% endfor %}
   {% for e in egresos %}

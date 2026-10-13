@@ -430,10 +430,10 @@ def create_app():
     def modulo_egresos():
         desde_texto, hasta_texto = request.args.get("desde", ""), request.args.get("hasta", "")
         try:
-            desde = date.fromisoformat(desde_texto) if desde_texto else hoy_argentina().replace(day=1)
+            desde = date.fromisoformat(desde_texto) if desde_texto else hoy_argentina()
             hasta = date.fromisoformat(hasta_texto) if hasta_texto else hoy_argentina()
         except ValueError:
-            desde, hasta = hoy_argentina().replace(day=1), hoy_argentina()
+            desde, hasta = hoy_argentina(), hoy_argentina()
         q = Egreso.query.filter(Egreso.fecha >= datetime.combine(desde, datetime.min.time()), Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()))
         vendedor_id = request.args.get("usuario_id", type=int)
         if vendedor_id:
