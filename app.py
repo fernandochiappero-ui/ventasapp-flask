@@ -289,6 +289,56 @@ def create_app():
         flash("Proveedor desactivado; se conserva su historial.", "success")
         return redirect(url_for("listar_proveedores"))
 
+    @app.route("/proveedores/<int:proveedor_id>/eliminar", methods=["POST"])
+    @administrador_requerido
+    def eliminar_proveedor(proveedor_id):
+        return eliminar_proveedor_registros(proveedor_id)
+
+    def eliminar_proveedor_registros(proveedor_id):
+        proveedor = db.get_or_404(Proveedor, proveedor_id)
+        compras = CompraProveedor.query.filter_by(proveedor_id=proveedor.id).all()
+        compra_ids = [compra.id for compra in compras]
+        pago_compra_ids = [
+            pago.id for pago in PagoCompraProveedor.query.filter(
+                PagoCompraProveedor.compra_id.in_(compra_ids)
+            ).all()
+        ] if compra_ids else []
+        pagos_legado = PagoProveedor.query.filter_by(proveedor_id=proveedor.id).all()
+        pago_legado_ids = [pago.id for pago in pagos_legado]
+
+        filtros_egreso = []
+        if pago_compra_ids:
+            filtros_egreso.append(Egreso.pago_compra_id.in_(pago_compra_ids))
+        if pago_legado_ids:
+            filtros_egreso.append(Egreso.legacy_pago_proveedor_id.in_(pago_legado_ids))
+        egreso_ids = [r[0] for r in Egreso.query.with_entities(Egreso.id).filter(
+            or_(*filtros_egreso)
+        ).all()] if filtros_egreso else []
+        if egreso_ids:
+            AuditoriaEgreso.query.filter(
+                AuditoriaEgreso.egreso_id.in_(egreso_ids)
+            ).delete(synchronize_session=False)
+            Egreso.query.filter(Egreso.id.in_(egreso_ids)).delete(
+                synchronize_session=False
+            )
+        if pago_compra_ids:
+            PagoCompraProveedor.query.filter(
+                PagoCompraProveedor.id.in_(pago_compra_ids)
+            ).delete(synchronize_session=False)
+        if compra_ids:
+            CompraProveedor.query.filter(
+                CompraProveedor.id.in_(compra_ids)
+            ).delete(synchronize_session=False)
+        if pago_legado_ids:
+            PagoProveedor.query.filter(
+                PagoProveedor.id.in_(pago_legado_ids)
+            ).delete(synchronize_session=False)
+        nombre = proveedor.nombre
+        Proveedor.query.filter_by(id=proveedor.id).delete(synchronize_session=False)
+        db.session.commit()
+        flash(f"Proveedor '{nombre}' y su historial eliminados.", "success")
+        return redirect(url_for("listar_proveedores"))
+
     @app.route("/api/proveedores", methods=["GET", "POST"])
     @login_required
     def buscar_proveedores():
