@@ -759,6 +759,13 @@ def create_app():
         ventas_hoy = Venta.query.filter_by(fecha=hoy).all()
         totales = totales_por_forma(ventas_hoy)
         total_hoy = round(sum(v.monto for v in ventas_hoy), 2)
+        total_vendido_hoy = round(
+            total_hoy
+            - totales["cuenta_corriente"]
+            - totales["tarjeta_qr"]
+            - totales["transferencia"],
+            2,
+        )
 
         if current_user.es_vendedor:
             clientes = Cliente.query.filter_by(activo=True).all()
@@ -775,6 +782,7 @@ def create_app():
                 hoy=hoy,
                 ventas_hoy=ventas_hoy,
                 total_hoy=total_hoy,
+                total_vendido_hoy=total_vendido_hoy,
                 efectivo_hoy=totales["efectivo"],
                 cuenta_hoy=totales["cuenta_corriente"],
                 tarjeta_hoy=totales["tarjeta_qr"],
@@ -793,12 +801,25 @@ def create_app():
         )
         deuda_total = round(sum(c.saldo for c in deudores), 2)
 
+        inicio_hoy = datetime.combine(hoy, datetime.min.time())
+        fin_hoy = datetime.combine(hoy + timedelta(days=1), datetime.min.time())
+        egresos_efectivo_hoy = sum(
+            (
+                egreso.monto for egreso in Egreso.query.filter(
+                    Egreso.fecha >= inicio_hoy,
+                    Egreso.fecha < fin_hoy,
+                    Egreso.categoria.in_(["retiro", "gasto"]),
+                    Egreso.forma_pago == "efectivo",
+                    Egreso.usuario_id.is_not(None),
+                    Egreso.legacy_retiro_id.is_(None),
+                    Egreso.legacy_pago_proveedor_id.is_(None),
+                    Egreso.pago_compra_id.is_(None),
+                ).all()
+            ),
+            Decimal("0.00"),
+        )
         efectivo_real_hoy = round(
-            totales["efectivo"]
-            - totales["tarjeta_qr"]
-            - totales["transferencia"]
-            - totales["cuenta_corriente"],
-            2,
+            Decimal(str(total_vendido_hoy)) - egresos_efectivo_hoy, 2
         )
 
         return render_template(
@@ -806,6 +827,7 @@ def create_app():
             hoy=hoy,
             ventas_hoy=ventas_hoy,
             total_hoy=total_hoy,
+            total_vendido_hoy=total_vendido_hoy,
             efectivo_hoy=totales["efectivo"],
             cuenta_hoy=totales["cuenta_corriente"],
             tarjeta_hoy=totales["tarjeta_qr"],
@@ -2031,6 +2053,7 @@ def create_app():
             desde=desde,
             hasta=hasta,
             total_ventas=total_ventas,
+            total_vendido=efectivo_ventas,
             cantidad_ventas=len(ventas),
             total_efectivo=efectivo_disponible,
             efectivo_ventas=efectivo_ventas,
