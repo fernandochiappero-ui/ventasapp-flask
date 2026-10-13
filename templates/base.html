@@ -120,6 +120,10 @@
           {% endfor %}
         {% endwith %}
 
+        {% if request.endpoint in ['listar_proveedores', 'nuevo_proveedor', 'modificar_proveedor', 'nueva_compra_proveedor', 'listar_compras_proveedor'] %}
+          <a class="boton secundario" href="{{ url_for('dashboard') }}" onclick="if (document.referrer && new URL(document.referrer).origin === location.origin) { event.preventDefault(); history.back(); }">Volver</a>
+        {% endif %}
+
         {% block contenido %}{% endblock %}
       </main>
     </div>
