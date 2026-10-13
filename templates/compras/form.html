@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}Registrar compra{% endblock %}
+{% block contenido %}
+<h1>Registrar compra</h1>
+<form method="POST" class="tarjeta">
+  <label for="buscar-proveedor">Proveedor *</label>
+  <input id="buscar-proveedor" autocomplete="off" placeholder="Escribí para buscar proveedor" required>
+  <input type="hidden" name="proveedor_id" id="proveedor_id" required>
+  <div id="proveedores-opciones" class="tarjeta" hidden></div>
+  <div id="crear-proveedor-rapido" hidden><label>Nuevo proveedor</label><input id="nuevo-proveedor-nombre" maxlength="150"><button type="button" id="crear-proveedor-boton" class="boton secundario">Crear y seleccionar</button><span id="crear-proveedor-error" class="mensaje error"></span></div>
+  <label>Fecha de compra *</label><input type="date" name="fecha" value="{{ hoy.isoformat() }}" required>
+  <label>Número o referencia de factura</label><input name="factura" maxlength="100">
+  <label>Descripción u observaciones</label><input name="descripcion" maxlength="500">
+  <label>Total de factura *</label><input type="number" name="total" min="0.01" step="0.01" required>
+  <label>Importe pagado ahora</label><input type="number" name="pagado" min="0" step="0.01" value="0">
+  <label>Forma de pago *</label><select name="forma_pago" required><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="otro">Otro</option><option value="cuenta_corriente">Cuenta corriente</option></select>
+  <label>Forma del importe pagado ahora, si corresponde</label><select name="forma_pago_inicial"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="otro">Otro</option></select>
+  <button class="ancho verde">Registrar compra</button>
+</form>
+<script>
+(() => {
+ const input=document.getElementById('buscar-proveedor'), hidden=document.getElementById('proveedor_id'), lista=document.getElementById('proveedores-opciones'); let timer;
+ const rapido=document.getElementById('crear-proveedor-rapido'), nombre=document.getElementById('nuevo-proveedor-nombre'), error=document.getElementById('crear-proveedor-error');
+ input.addEventListener('input',()=>{hidden.value=''; clearTimeout(timer); timer=setTimeout(async()=>{const r=await fetch('/api/proveedores?q='+encodeURIComponent(input.value)); const datos=await r.json(); lista.replaceChildren(); lista.hidden=!input.value; rapido.hidden=!input.value; if(!datos.length){lista.textContent='No hay coincidencias.'; return;} datos.forEach(p=>{const b=document.createElement('button'); b.type='button'; b.className='boton secundario'; b.textContent=p.nombre; b.addEventListener('click',()=>{input.value=p.nombre; hidden.value=p.id; lista.hidden=true; rapido.hidden=true;}); lista.append(b);});},120);});
+ document.getElementById('crear-proveedor-boton').addEventListener('click',async()=>{error.textContent=''; const r=await fetch('/api/proveedores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre:nombre.value})}); const dato=await r.json(); if(!r.ok){error.textContent=dato.error; return;} input.value=dato.nombre; hidden.value=dato.id; lista.hidden=true; rapido.hidden=true;});
+ input.addEventListener('keydown',e=>{if(e.key==='ArrowDown'){lista.querySelector('button')?.focus();} });
+})();
+</script>
+{% endblock %}

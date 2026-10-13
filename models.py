@@ -171,9 +171,89 @@ class Proveedor(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(150), nullable=False)
+    cuit = db.Column(db.String(20))
     telefono = db.Column(db.String(60))
+    direccion = db.Column(db.String(200))
+    email = db.Column(db.String(150))
+    observaciones = db.Column(db.String(500))
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado = db.Column(db.DateTime, default=ahora_argentina)
+    compras = db.relationship("CompraProveedor", backref="proveedor", lazy=True)
+
+
+class CompraProveedor(db.Model):
+    """Factura o compra y su deuda pendiente; cada pago se imputa aparte."""
+    __tablename__ = "compras_proveedores"
+
+    id = db.Column(db.Integer, primary_key=True)
+    proveedor_id = db.Column(db.Integer, db.ForeignKey("proveedores.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
+    fecha = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    factura = db.Column(db.String(100))
+    descripcion = db.Column(db.String(500))
+    total = db.Column(db.Numeric(12, 2), nullable=False)
+    forma_pago = db.Column(db.String(30), nullable=False)
+    creado = db.Column(db.DateTime, nullable=False, default=ahora_argentina)
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
+    pagos = db.relationship("PagoCompraProveedor", backref="compra", lazy=True, cascade="all, delete-orphan")
+
+    @property
+    def pagado(self):
+        return sum((p.monto for p in self.pagos), Decimal("0.00"))
+
+    @property
+    def saldo(self):
+        return max(self.total - self.pagado, Decimal("0.00"))
+
+
+class PagoCompraProveedor(db.Model):
+    __tablename__ = "pagos_compras_proveedores"
+
+    id = db.Column(db.Integer, primary_key=True)
+    compra_id = db.Column(db.Integer, db.ForeignKey("compras_proveedores.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
+    fecha = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    monto = db.Column(db.Numeric(12, 2), nullable=False)
+    forma_pago = db.Column(db.String(30), nullable=False)
+    observaciones = db.Column(db.String(300))
+    creado = db.Column(db.DateTime, nullable=False, default=ahora_argentina)
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
+
+
+class Egreso(db.Model):
+    __tablename__ = "egresos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
+    legacy_retiro_id = db.Column(db.Integer, db.ForeignKey("retiros_vendedor.id"), unique=True)
+    legacy_pago_proveedor_id = db.Column(db.Integer, db.ForeignKey("pagos_proveedores.id"), unique=True)
+    pago_compra_id = db.Column(db.Integer, db.ForeignKey("pagos_compras_proveedores.id"), unique=True)
+    fecha = db.Column(db.DateTime, nullable=False, default=ahora_argentina, index=True)
+    monto = db.Column(db.Numeric(12, 2), nullable=False)
+    concepto = db.Column(db.String(300), nullable=False)
+    categoria = db.Column(db.String(30), nullable=False, default="gasto")
+    forma_pago = db.Column(db.String(30), nullable=False, default="efectivo")
+    observaciones = db.Column(db.String(500))
+    estado = db.Column(db.String(20), nullable=False, default="activo")
+    creado = db.Column(db.DateTime, nullable=False, default=ahora_argentina)
+    modificado = db.Column(db.DateTime)
+    modificado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id], backref="egresos_registrados")
+    modificado_por = db.relationship("Usuario", foreign_keys=[modificado_por_id])
+    auditorias = db.relationship("AuditoriaEgreso", backref="egreso", lazy=True, cascade="all, delete-orphan")
+    pago_compra = db.relationship("PagoCompraProveedor", foreign_keys=[pago_compra_id])
+
+
+class AuditoriaEgreso(db.Model):
+    __tablename__ = "auditoria_egresos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    egreso_id = db.Column(db.Integer, db.ForeignKey("egresos.id"), nullable=False, index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
+    fecha = db.Column(db.DateTime, nullable=False, default=ahora_argentina)
+    anteriores = db.Column(db.JSON, nullable=False)
+    nuevos = db.Column(db.JSON, nullable=False)
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
 
 
 class PagoProveedor(db.Model):

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titulo %}Editar egreso{% endblock %}
+{% block contenido %}
+<h1>Editar egreso</h1>
+<form method="POST" class="tarjeta" data-confirmar-guardado data-mensaje="¿Confirmás guardar los cambios? Se registrarán en el historial.">
+  <label>Fecha *</label><input type="date" name="fecha" value="{{ egreso.fecha.date().isoformat() }}" required>
+  <label>Importe *</label><input type="number" name="monto" min="0.01" step="0.01" value="{{ egreso.monto }}" required>
+  <label>Concepto *</label><input name="concepto" maxlength="300" value="{{ egreso.concepto }}" required>
+  <label>Categoría</label><select name="categoria"><option value="retiro" {{ 'selected' if egreso.categoria == 'retiro' }}>Retiro</option><option value="gasto" {{ 'selected' if egreso.categoria == 'gasto' }}>Gasto</option></select>
+  <label>Forma de pago</label><select name="forma_pago">{% for f in ['efectivo','transferencia','otro'] %}<option value="{{ f }}" {{ 'selected' if egreso.forma_pago == f }}>{{ f|title }}</option>{% endfor %}</select>
+  <label>Observaciones</label><input name="observaciones" maxlength="500" value="{{ egreso.observaciones or '' }}">
+  <button class="ancho verde">Guardar cambios</button>
+</form>
+<h2>Historial de cambios</h2>
+{% for a in egreso.auditorias|sort(attribute='fecha', reverse=true) %}<div class="tarjeta"><strong>{{ a.usuario.username }}</strong> · {{ a.fecha.strftime('%d/%m/%Y %H:%M') }}<pre>{{ a.anteriores }} → {{ a.nuevos }}</pre></div>{% else %}<p class="vacio">Sin modificaciones anteriores.</p>{% endfor %}
+{% endblock %}

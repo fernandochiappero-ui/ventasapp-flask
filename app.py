@@ -29,7 +29,8 @@ from sqlalchemy import inspect, or_, text
 from extensions import db, login_manager
 from models import (
     Usuario, Cliente, Venta, MovimientoCC, ProductoAlmacen, ProductoVerduleria,
-    Proveedor, PagoProveedor, RetiroVendedor,
+    Proveedor, PagoProveedor, RetiroVendedor, CompraProveedor,
+    PagoCompraProveedor, Egreso, AuditoriaEgreso,
 )
 
 ZONA_HORARIA = ZoneInfo("America/Argentina/Buenos_Aires")
@@ -103,7 +104,9 @@ def create_app():
     # datos liviana que es un solo archivo, ideal para un proyecto chico).
     database_url = os.environ.get("DATABASE_URL", "sqlite:///base_datos.db")
     if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
+        database_url = database_url.replace("postgres://", "postgresql+psycopg://", 1)
+    elif database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -150,6 +153,46 @@ def create_app():
                 text("ALTER TABLE movimientos_cc ADD COLUMN usuario_id INTEGER")
             )
             db.session.commit()
+        columnas_proveedor = {
+            columna["name"] for columna in inspect(db.engine).get_columns("proveedores")
+        }
+        for nombre, definicion in {
+            "cuit": "VARCHAR(20)",
+            "direccion": "VARCHAR(200)",
+            "email": "VARCHAR(150)",
+            "observaciones": "VARCHAR(500)",
+        }.items():
+            if nombre not in columnas_proveedor:
+                db.session.execute(text(f"ALTER TABLE proveedores ADD COLUMN {nombre} {definicion}"))
+        columnas_egreso = {c["name"] for c in inspect(db.engine).get_columns("egresos")}
+        for nombre in ("legacy_retiro_id", "legacy_pago_proveedor_id", "pago_compra_id"):
+            if nombre not in columnas_egreso:
+                db.session.execute(text(f"ALTER TABLE egresos ADD COLUMN {nombre} INTEGER"))
+        db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_egresos_legacy_retiro ON egresos (legacy_retiro_id)"))
+        db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_egresos_legacy_pago ON egresos (legacy_pago_proveedor_id)"))
+        db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_egresos_pago_compra ON egresos (pago_compra_id)"))
+        # Copia histórica idempotente: los registros originales permanecen intactos.
+        retiros_legado = RetiroVendedor.query.all()
+        for retiro in retiros_legado:
+            if not Egreso.query.filter_by(legacy_retiro_id=retiro.id).first():
+                db.session.add(Egreso(
+                    legacy_retiro_id=retiro.id, usuario_id=retiro.usuario_id,
+                    fecha=retiro.creado or datetime.combine(retiro.fecha, datetime.min.time()),
+                    monto=Decimal(str(retiro.monto)), concepto=retiro.descripcion or "Retiro del vendedor",
+                    categoria="retiro", forma_pago="efectivo",
+                ))
+        pagos_legado = PagoProveedor.query.filter(PagoProveedor.tipo != "cuenta_corriente").all()
+        for pago_legado in pagos_legado:
+            if not Egreso.query.filter_by(legacy_pago_proveedor_id=pago_legado.id).first():
+                db.session.add(Egreso(
+                    legacy_pago_proveedor_id=pago_legado.id, usuario_id=pago_legado.usuario_id,
+                    fecha=pago_legado.creado or datetime.combine(pago_legado.fecha, datetime.min.time()),
+                    monto=Decimal(str(pago_legado.monto)),
+                    concepto=f"Pago a proveedor: {pago_legado.proveedor.nombre}",
+                    categoria="pago_proveedor", forma_pago="otro",
+                    observaciones=pago_legado.descripcion,
+                ))
+        db.session.commit()
     login_manager.init_app(app)
     login_manager.login_view = "login"  # a dónde redirigir si no está logueado
     login_manager.login_message = "Iniciá sesión para continuar."
@@ -170,6 +213,358 @@ def create_app():
         # Flask-Login llama a esta función en cada request para saber
         # quién es el usuario logueado, a partir del id guardado en la cookie.
         return db.session.get(Usuario, int(user_id))
+
+    def decimal_formulario(nombre):
+        texto = (request.form.get(nombre) or "").strip().replace(",", ".")
+        try:
+            valor = Decimal(texto)
+            if not valor.is_finite():
+                raise InvalidOperation
+            return valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        except (InvalidOperation, ValueError):
+            return None
+
+    @app.route("/proveedores")
+    @login_required
+    def listar_proveedores():
+        q = request.args.get("q", "").strip()
+        proveedores = Proveedor.query.order_by(Proveedor.nombre).all()
+        if q:
+            clave = normalizar(q)
+            proveedores = [p for p in proveedores if clave in normalizar(p.nombre)]
+        return render_template("proveedores/index.html", proveedores=proveedores, q=q)
+
+    @app.route("/proveedores/nuevo", methods=["GET", "POST"])
+    @login_required
+    def nuevo_proveedor():
+        if request.method == "POST":
+            nombre = request.form.get("nombre", "").strip()
+            if not nombre:
+                flash("El nombre del proveedor es obligatorio.", "error")
+            elif any(normalizar(p.nombre) == normalizar(nombre) for p in Proveedor.query.all()):
+                flash("Ya existe un proveedor con ese nombre.", "error")
+            else:
+                proveedor = Proveedor(
+                    nombre=nombre, cuit=request.form.get("cuit", "").strip() or None,
+                    telefono=request.form.get("telefono", "").strip() or None,
+                    direccion=request.form.get("direccion", "").strip() or None,
+                    email=request.form.get("email", "").strip() or None,
+                    observaciones=request.form.get("observaciones", "").strip() or None,
+                )
+                db.session.add(proveedor)
+                db.session.commit()
+                flash("Proveedor agregado.", "success")
+                return redirect(url_for("listar_proveedores"))
+        return render_template("proveedores/form.html", proveedor=None)
+
+    @app.route("/proveedores/<int:proveedor_id>/editar", methods=["GET", "POST"])
+    @administrador_requerido
+    def modificar_proveedor(proveedor_id):
+        proveedor = db.get_or_404(Proveedor, proveedor_id)
+        if request.method == "POST":
+            nombre = request.form.get("nombre", "").strip()
+            otros = Proveedor.query.filter(Proveedor.id != proveedor.id).all()
+            if not nombre:
+                flash("El nombre es obligatorio.", "error")
+            elif any(normalizar(p.nombre) == normalizar(nombre) for p in otros):
+                flash("Ya existe otro proveedor con ese nombre.", "error")
+            else:
+                proveedor.nombre = nombre
+                proveedor.cuit = request.form.get("cuit", "").strip() or None
+                proveedor.telefono = request.form.get("telefono", "").strip() or None
+                proveedor.direccion = request.form.get("direccion", "").strip() or None
+                proveedor.email = request.form.get("email", "").strip() or None
+                proveedor.observaciones = request.form.get("observaciones", "").strip() or None
+                db.session.commit()
+                flash("Proveedor actualizado.", "success")
+                return redirect(url_for("listar_proveedores"))
+        return render_template("proveedores/form.html", proveedor=proveedor)
+
+    @app.route("/proveedores/<int:proveedor_id>/baja", methods=["POST"])
+    @administrador_requerido
+    def desactivar_proveedor(proveedor_id):
+        proveedor = db.get_or_404(Proveedor, proveedor_id)
+        proveedor.activo = False
+        db.session.commit()
+        flash("Proveedor desactivado; se conserva su historial.", "success")
+        return redirect(url_for("listar_proveedores"))
+
+    @app.route("/api/proveedores", methods=["GET", "POST"])
+    @login_required
+    def buscar_proveedores():
+        if request.method == "POST":
+            datos = request.get_json(silent=True) or {}
+            nombre = str(datos.get("nombre", "")).strip()[:150]
+            if not nombre:
+                return jsonify({"error": "El nombre del proveedor es obligatorio."}), 400
+            if any(normalizar(p.nombre) == normalizar(nombre) for p in Proveedor.query.all()):
+                return jsonify({"error": "Ya existe un proveedor con ese nombre."}), 409
+            proveedor = Proveedor(nombre=nombre)
+            db.session.add(proveedor)
+            db.session.commit()
+            return jsonify({"id": proveedor.id, "nombre": proveedor.nombre}), 201
+        q = normalizar(request.args.get("q", "").strip())
+        lista = Proveedor.query.filter_by(activo=True).order_by(Proveedor.nombre).all()
+        vistos, resultados = set(), []
+        for proveedor in sorted(lista, key=lambda p: normalizar(p.nombre)):
+            clave = normalizar(proveedor.nombre)
+            if q in clave and clave not in vistos:
+                vistos.add(clave)
+                resultados.append({"id": proveedor.id, "nombre": proveedor.nombre})
+            if len(resultados) == 20:
+                break
+        return jsonify(resultados)
+
+    @app.route("/compras/nueva", methods=["GET", "POST"])
+    @login_required
+    def nueva_compra_proveedor():
+        if request.method == "POST":
+            proveedor = db.session.get(Proveedor, request.form.get("proveedor_id", type=int))
+            total = decimal_formulario("total")
+            pagado = decimal_formulario("pagado") or Decimal("0.00")
+            forma = request.form.get("forma_pago", "")
+            forma_pago_real = request.form.get("forma_pago_inicial", "") or ("efectivo" if forma == "cuenta_corriente" else forma)
+            fecha_texto = request.form.get("fecha", "")
+            factura = request.form.get("factura", "").strip() or None
+            try:
+                fecha = date.fromisoformat(fecha_texto) if fecha_texto else hoy_argentina()
+            except ValueError:
+                fecha = None
+            formas = {"efectivo", "transferencia", "otro", "cuenta_corriente"}
+            if not proveedor or not proveedor.activo:
+                flash("Elegí un proveedor activo.", "error")
+            elif total is None or total <= 0:
+                flash("El total debe ser un importe mayor a cero.", "error")
+            elif pagado < 0 or pagado > total:
+                flash("El pago inicial debe estar entre cero y el total de la factura.", "error")
+            elif forma not in formas:
+                flash("Elegí una forma de pago válida.", "error")
+            elif pagado > 0 and forma_pago_real not in {"efectivo", "transferencia", "otro"}:
+                flash("Elegí cómo se pagó el importe inicial.", "error")
+            elif fecha is None:
+                flash("La fecha de compra no es válida.", "error")
+            elif factura and CompraProveedor.query.filter_by(proveedor_id=proveedor.id, factura=factura).first():
+                flash("Ya existe una compra con esa factura para este proveedor.", "error")
+            else:
+                compra = CompraProveedor(
+                    proveedor_id=proveedor.id, usuario_id=current_user.id, fecha=fecha,
+                    factura=factura,
+                    descripcion=request.form.get("descripcion", "").strip() or None,
+                    total=total, forma_pago=forma,
+                )
+                db.session.add(compra)
+                db.session.flush()
+                if pagado > 0:
+                    pago = PagoCompraProveedor(
+                        compra=compra, usuario_id=current_user.id, fecha=fecha,
+                        monto=pagado, forma_pago=forma_pago_real,
+                    )
+                    db.session.add(pago)
+                    db.session.add(Egreso(
+                        pago_compra=pago, usuario_id=current_user.id,
+                        fecha=datetime.combine(fecha, datetime.now(ZONA_HORARIA).time().replace(tzinfo=None)),
+                        monto=pagado, concepto=f"Pago a {proveedor.nombre} - factura {compra.factura or compra.id or 'nueva'}",
+                        categoria="pago_proveedor", forma_pago=forma_pago_real,
+                    ))
+                db.session.commit()
+                flash("Compra registrada con el saldo pendiente calculado.", "success")
+                return redirect(url_for("listar_compras_proveedor"))
+        return render_template("compras/form.html", hoy=hoy_argentina())
+
+    @app.route("/compras")
+    @login_required
+    def listar_compras_proveedor():
+        compras = CompraProveedor.query.order_by(CompraProveedor.fecha.desc(), CompraProveedor.id.desc()).all()
+        return render_template("compras/index.html", compras=compras)
+
+    @app.route("/compras/<int:compra_id>/pago", methods=["POST"])
+    @login_required
+    def pagar_compra_proveedor(compra_id):
+        compra = CompraProveedor.query.filter_by(id=compra_id).with_for_update().first_or_404()
+        monto = decimal_formulario("monto")
+        forma = request.form.get("forma_pago", "")
+        if monto is None or monto <= 0 or monto > compra.saldo:
+            flash("El pago debe ser mayor a cero y no superar el saldo pendiente.", "error")
+        elif forma not in {"efectivo", "transferencia", "otro"}:
+            flash("Forma de pago inválida.", "error")
+        else:
+            pago = PagoCompraProveedor(
+                compra_id=compra.id, usuario_id=current_user.id,
+                fecha=hoy_argentina(), monto=monto, forma_pago=forma,
+            )
+            db.session.add(pago)
+            db.session.add(Egreso(
+                pago_compra=pago, usuario_id=current_user.id,
+                fecha=datetime.now(ZONA_HORARIA).replace(tzinfo=None), monto=monto,
+                concepto=f"Pago a {compra.proveedor.nombre} - factura {compra.factura or compra.id}",
+                categoria="pago_proveedor", forma_pago=forma,
+            ))
+            db.session.commit()
+            flash("Pago imputado a la factura.", "success")
+        return redirect(url_for("listar_compras_proveedor"))
+
+    @app.route("/egresos", methods=["GET", "POST"])
+    @login_required
+    def modulo_egresos():
+        if request.method == "POST":
+            monto = decimal_formulario("monto")
+            concepto = request.form.get("concepto", "").strip()
+            categoria = request.form.get("categoria", "")
+            forma = request.form.get("forma_pago", "")
+            if monto is None or monto <= 0 or not concepto or categoria not in {"retiro", "gasto"} or forma not in {"efectivo", "transferencia", "otro"}:
+                flash("Completá el importe, concepto, categoría y forma de pago correctamente.", "error")
+            else:
+                db.session.add(Egreso(
+                    usuario_id=current_user.id, monto=monto, concepto=concepto,
+                    categoria=categoria, forma_pago=forma,
+                    observaciones=request.form.get("observaciones", "").strip() or None,
+                ))
+                db.session.commit()
+                flash("Egreso registrado.", "success")
+                return redirect(url_for("modulo_egresos"))
+        desde_texto, hasta_texto = request.args.get("desde", ""), request.args.get("hasta", "")
+        try:
+            desde = date.fromisoformat(desde_texto) if desde_texto else hoy_argentina().replace(day=1)
+            hasta = date.fromisoformat(hasta_texto) if hasta_texto else hoy_argentina()
+        except ValueError:
+            desde, hasta = hoy_argentina().replace(day=1), hoy_argentina()
+        q = Egreso.query.filter(Egreso.fecha >= datetime.combine(desde, datetime.min.time()), Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()))
+        vendedor_id = request.args.get("usuario_id", type=int)
+        if current_user.es_vendedor:
+            q = q.filter_by(usuario_id=current_user.id)
+        elif vendedor_id:
+            q = q.filter_by(usuario_id=vendedor_id)
+        categoria_filtro = request.args.get("categoria", "")
+        forma_filtro = request.args.get("forma_pago", "")
+        if categoria_filtro in {"retiro", "gasto", "pago_proveedor"}:
+            q = q.filter_by(categoria=categoria_filtro)
+        if forma_filtro in {"efectivo", "transferencia", "otro"}:
+            q = q.filter_by(forma_pago=forma_filtro)
+        orden = request.args.get("orden", "fecha")
+        if orden == "importe":
+            q = q.order_by(Egreso.monto.desc(), Egreso.fecha.desc())
+        elif orden == "vendedor":
+            q = q.outerjoin(Usuario, Egreso.usuario_id == Usuario.id).order_by(Usuario.username, Egreso.fecha.desc())
+        elif orden == "categoria":
+            q = q.order_by(Egreso.categoria, Egreso.fecha.desc())
+        else:
+            orden = "fecha"
+            q = q.order_by(Egreso.fecha.desc(), Egreso.id.desc())
+        egresos = q.all()
+        usuarios = Usuario.query.order_by(Usuario.username).all() if current_user.es_administrador else []
+        por_usuario = {}
+        for e in egresos:
+            clave = e.usuario.username if e.usuario else "Sistema"
+            fila = por_usuario.setdefault(clave, {"total": Decimal("0.00"), "cantidad": 0})
+            fila["total"] += e.monto
+            fila["cantidad"] += 1
+        lunes = (hoy_argentina() - timedelta(days=hoy_argentina().weekday()))
+        mes = hoy_argentina().replace(day=1)
+        total_dia = sum((e.monto for e in egresos if e.fecha.date() == hoy_argentina()), Decimal("0.00"))
+        total_semana = sum((e.monto for e in egresos if e.fecha.date() >= lunes and e.fecha.date() <= hoy_argentina()), Decimal("0.00"))
+        total_mes = sum((e.monto for e in egresos if e.fecha.date() >= mes and e.fecha.date() <= hoy_argentina()), Decimal("0.00"))
+        return render_template("egresos/index.html", egresos=egresos, usuarios=usuarios,
+                               desde=desde, hasta=hasta, vendedor_id=vendedor_id,
+                               categoria_filtro=categoria_filtro, forma_filtro=forma_filtro,
+                               orden=orden,
+                               total=sum((e.monto for e in egresos), Decimal("0.00")),
+                               por_usuario=por_usuario, total_dia=total_dia,
+                               total_semana=total_semana, total_mes=total_mes)
+
+    @app.route("/egresos/<int:egreso_id>/editar", methods=["GET", "POST"])
+    @login_required
+    def editar_egreso(egreso_id):
+        egreso = db.get_or_404(Egreso, egreso_id)
+        if current_user.es_vendedor or egreso.estado != "activo" or egreso.categoria == "pago_proveedor":
+            flash("Solo el administrador puede modificar egresos.", "error")
+            return redirect(url_for("modulo_egresos"))
+        if request.method == "POST":
+            monto = decimal_formulario("monto")
+            concepto = request.form.get("concepto", "").strip()
+            categoria = request.form.get("categoria", "")
+            forma = request.form.get("forma_pago", "")
+            try:
+                fecha_egreso = date.fromisoformat(request.form.get("fecha", ""))
+            except ValueError:
+                fecha_egreso = None
+            if monto is None or monto <= 0 or not concepto or fecha_egreso is None or categoria not in {"retiro", "gasto"} or forma not in {"efectivo", "transferencia", "otro"}:
+                flash("Revisá el importe, concepto, categoría y forma de pago.", "error")
+            else:
+                anterior = {"fecha": egreso.fecha.isoformat(), "monto": str(egreso.monto), "concepto": egreso.concepto, "categoria": egreso.categoria,
+                            "forma_pago": egreso.forma_pago, "observaciones": egreso.observaciones}
+                nuevo = {"fecha": fecha_egreso.isoformat(), "monto": str(monto), "concepto": concepto, "categoria": categoria,
+                         "forma_pago": forma, "observaciones": request.form.get("observaciones", "").strip() or None}
+                hora_actual = egreso.fecha.time()
+                egreso.fecha = datetime.combine(fecha_egreso, hora_actual)
+                egreso.monto, egreso.concepto, egreso.categoria = monto, concepto, categoria
+                egreso.forma_pago, egreso.observaciones = forma, nuevo["observaciones"]
+                egreso.modificado, egreso.modificado_por_id = datetime.now(ZONA_HORARIA).replace(tzinfo=None), current_user.id
+                db.session.add(AuditoriaEgreso(egreso=egreso, usuario_id=current_user.id, anteriores=anterior, nuevos=nuevo))
+                db.session.commit()
+                flash("Egreso actualizado; quedó guardada la auditoría.", "success")
+                return redirect(url_for("modulo_egresos"))
+        return render_template("egresos/editar.html", egreso=egreso)
+
+    @app.route("/egresos/reporte.pdf")
+    @administrador_requerido
+    def egresos_pdf():
+        try:
+            desde = date.fromisoformat(request.args.get("desde", ""))
+            hasta = date.fromisoformat(request.args.get("hasta", ""))
+        except ValueError:
+            flash("Elegí un rango de fechas válido para generar el PDF.", "error")
+            return redirect(url_for("modulo_egresos"))
+        if desde > hasta:
+            flash("La fecha inicial no puede ser posterior a la fecha final.", "error")
+            return redirect(url_for("modulo_egresos"))
+        q = Egreso.query.filter(Egreso.fecha >= datetime.combine(desde, datetime.min.time()), Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()))
+        usuario_id = request.args.get("usuario_id", type=int)
+        categoria = request.args.get("categoria", "")
+        forma = request.args.get("forma_pago", "")
+        if usuario_id:
+            q = q.filter_by(usuario_id=usuario_id)
+        if categoria in {"retiro", "gasto", "pago_proveedor"}:
+            q = q.filter_by(categoria=categoria)
+        if forma in {"efectivo", "transferencia", "otro"}:
+            q = q.filter_by(forma_pago=forma)
+        egresos = q.order_by(Egreso.usuario_id, Egreso.fecha).all()
+        if not egresos:
+            flash("No hay egresos en el período y con los filtros elegidos.", "error")
+            return redirect(url_for("modulo_egresos", desde=desde.isoformat(), hasta=hasta.isoformat()))
+        pdf = FPDF(orientation="L", format="A4")
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.cell(0, 10, "VERDULERIA EL GAUCHITO - REPORTE DE EGRESOS", ln=1)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.cell(0, 7, f"Período: {desde:%d/%m/%Y} al {hasta:%d/%m/%Y} | Generado por {current_user.username} | {datetime.now(ZONA_HORARIA):%d/%m/%Y %H:%M}", ln=1)
+        pdf.cell(0, 7, f"Movimientos: {len(egresos)} | Total: ${sum((e.monto for e in egresos), Decimal('0.00')):.2f}", ln=1)
+        pdf.ln(2)
+        columnas = [(27,"Fecha"),(34,"Vendedor"),(25,"Categoría"),(28,"Forma"),(90,"Concepto"),(30,"Importe")]
+        pdf.set_font("Helvetica", "B", 9)
+        for ancho, titulo in columnas: pdf.cell(ancho, 8, titulo, border=1)
+        pdf.ln()
+        pdf.set_font("Helvetica", "", 9)
+        for e in egresos:
+            valores = [e.fecha.strftime("%d/%m/%Y %H:%M"), e.usuario.username if e.usuario else "Sistema", e.categoria, e.forma_pago, e.concepto, f"${e.monto:.2f}"]
+            for (ancho, _), valor in zip(columnas, valores): pdf.cell(ancho, 7, str(valor)[:55], border=1)
+            pdf.ln()
+        pdf.ln(3)
+        pdf.set_font("Helvetica", "B", 10)
+        por_vendedor, por_categoria = {}, {}
+        for e in egresos:
+            vendedor = e.usuario.username if e.usuario else "Sistema"
+            por_vendedor[vendedor] = por_vendedor.get(vendedor, Decimal("0.00")) + e.monto
+            por_categoria[e.categoria] = por_categoria.get(e.categoria, Decimal("0.00")) + e.monto
+        for vendedor, subtotal in sorted(por_vendedor.items()):
+            pdf.cell(0, 7, f"Subtotal {vendedor}: ${subtotal:.2f}", ln=1)
+        for tipo, subtotal in sorted(por_categoria.items()):
+            pdf.cell(0, 7, f"Subtotal {tipo}: ${subtotal:.2f}", ln=1)
+        nombre = f"egresos-{desde:%Y%m%d}-{hasta:%Y%m%d}.pdf"
+        contenido_pdf = pdf.output(dest="S")
+        if isinstance(contenido_pdf, str):
+            contenido_pdf = contenido_pdf.encode("latin-1")
+        return send_file(BytesIO(bytes(contenido_pdf)), mimetype="application/pdf", as_attachment=True, download_name=nombre)
 
     # ------------------------------------------------------------------
     # LOGIN / LOGOUT
@@ -1147,6 +1542,7 @@ def create_app():
     @app.route("/retiros")
     @login_required
     def retiros():
+        return redirect(url_for("modulo_egresos"))
         hoy = hoy_argentina()
         proveedores = Proveedor.query.filter_by(activo=True).order_by(Proveedor.nombre).all()
         resumen = []
@@ -1195,7 +1591,7 @@ def create_app():
         return redirect(url_for("retiros"))
 
     @app.route("/retiros/proveedores/<int:proveedor_id>/editar", methods=["GET", "POST"])
-    @login_required
+    @administrador_requerido
     def editar_proveedor(proveedor_id):
         proveedor = Proveedor.query.filter_by(id=proveedor_id, activo=True).first_or_404()
         if request.method == "POST":
@@ -1217,7 +1613,7 @@ def create_app():
         return render_template("retiros/proveedor_editar.html", proveedor=proveedor)
 
     @app.route("/retiros/proveedores/<int:proveedor_id>/eliminar", methods=["POST"])
-    @login_required
+    @administrador_requerido
     def baja_proveedor(proveedor_id):
         proveedor = Proveedor.query.filter_by(id=proveedor_id, activo=True).first_or_404()
         proveedor.activo = False  # se conserva el historial de pagos
@@ -1228,6 +1624,8 @@ def create_app():
     @app.route("/retiros/egresos/nuevo", methods=["POST"])
     @login_required
     def nuevo_egreso_proveedor():
+        flash("Los pagos a proveedores se registran desde Compras y se imputan a una factura.", "error")
+        return redirect(url_for("listar_compras_proveedor"))
         proveedor_id = request.form.get("proveedor_id", type=int)
         tipo = request.form.get("tipo", "")
         monto = request.form.get("monto", type=float)
@@ -1252,6 +1650,17 @@ def create_app():
     @app.route("/retiros/vendedor/nuevo", methods=["POST"])
     @login_required
     def nuevo_retiro_vendedor():
+        monto = decimal_formulario("monto")
+        descripcion = request.form.get("descripcion", "").strip()
+        if monto is None or monto <= 0:
+            flash("El monto del retiro tiene que ser mayor a 0.", "error")
+        else:
+            db.session.add(Egreso(usuario_id=current_user.id, monto=monto,
+                                  concepto=descripcion or "Retiro del vendedor",
+                                  categoria="retiro", forma_pago="efectivo"))
+            db.session.commit()
+            flash(f"Retiro de ${monto:,.2f} registrado.", "success")
+        return redirect(url_for("modulo_egresos"))
         monto = request.form.get("monto", type=float)
         descripcion = request.form.get("descripcion", "").strip()
         if not monto or monto <= 0:

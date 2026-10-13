@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar proveedor' if proveedor else 'Nuevo proveedor' }}{% endblock %}
+{% block contenido %}
+<h1>{{ 'Editar proveedor' if proveedor else 'Nuevo proveedor' }}</h1>
+<form method="POST" class="tarjeta">
+  <label>Nombre o razón social *</label><input name="nombre" maxlength="150" required value="{{ request.form.get('nombre', proveedor.nombre if proveedor else '') }}">
+  <label>CUIT</label><input name="cuit" maxlength="20" value="{{ request.form.get('cuit', proveedor.cuit if proveedor else '') }}">
+  <label>Teléfono</label><input name="telefono" maxlength="60" value="{{ request.form.get('telefono', proveedor.telefono if proveedor else '') }}">
+  <label>Dirección</label><input name="direccion" maxlength="200" value="{{ request.form.get('direccion', proveedor.direccion if proveedor else '') }}">
+  <label>Correo electrónico</label><input type="email" name="email" maxlength="150" value="{{ request.form.get('email', proveedor.email if proveedor else '') }}">
+  <label>Observaciones</label><input name="observaciones" maxlength="500" value="{{ request.form.get('observaciones', proveedor.observaciones if proveedor else '') }}">
+  <button class="ancho verde">Guardar proveedor</button>
+</form>
+{% endblock %}

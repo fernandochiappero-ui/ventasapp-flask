@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}Compras a proveedores{% endblock %}
+{% block contenido %}
+<h1>Compras a proveedores</h1>
+<a href="{{ url_for('nueva_compra_proveedor') }}" class="boton verde">+ Registrar compra</a>
+<div class="tarjeta">
+{% for c in compras %}
+  <div class="renglon"><div><div class="principal">{{ c.proveedor.nombre }}{% if c.factura %} · Factura {{ c.factura }}{% endif %}</div><div class="secundario">{{ c.fecha.strftime('%d/%m/%Y') }} · {{ c.descripcion or 'Sin descripción' }} · Registró {{ c.usuario.username }}</div><div class="secundario">Total ${{ '%.2f'|format(c.total) }} · Pagado ${{ '%.2f'|format(c.pagado) }} · Pendiente ${{ '%.2f'|format(c.saldo) }}</div></div>
+  {% if c.saldo > 0 %}<form method="POST" action="{{ url_for('pagar_compra_proveedor', compra_id=c.id) }}"><input type="number" name="monto" min="0.01" max="{{ c.saldo }}" step="0.01" placeholder="Monto a pagar" required><select name="forma_pago"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="otro">Otro</option></select><button class="boton verde">Registrar pago</button></form>{% endif %}</div>
+{% else %}<p class="vacio">Todavía no hay compras registradas.</p>{% endfor %}
+</div>
+{% endblock %}

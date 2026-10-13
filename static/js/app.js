@@ -89,6 +89,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let formularioPendiente = null;
 
+  document.querySelectorAll("form[data-confirmar-guardado]").forEach((formulario) => {
+    formulario.addEventListener("submit", (evento) => {
+      if (!window.confirm(formulario.dataset.mensaje || "¿Confirmás guardar los cambios?")) {
+        evento.preventDefault();
+        return;
+      }
+      evento.preventDefault();
+      HTMLFormElement.prototype.submit.call(formulario);
+    });
+  });
+
   if (modal && tituloConfirmacion && mensaje && cancelar && aceptar) {
     const cerrarModal = () => {
       modal.hidden = true;

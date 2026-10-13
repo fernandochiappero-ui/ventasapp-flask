@@ -70,7 +70,7 @@
       <a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">
         <span class="icono">🏠</span>Inicio
       </a>
-      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nueva_venta','nuevo_cliente','registrar_pago_vendedor','retiros','editar_proveedor'] }}">
+      <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nueva_venta','nuevo_cliente','registrar_pago_vendedor','retiros','editar_proveedor','listar_proveedores','nuevo_proveedor','nueva_compra_proveedor','listar_compras_proveedor','modulo_egresos'] }}">
         <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
           <span class="icono">📁</span>Archivos
         </a>
@@ -82,6 +82,10 @@
         </div>
       </div>
       {% endif %}
+      <a href="{{ url_for('listar_proveedores') }}">Proveedores</a>
+      <a href="{{ url_for('nueva_compra_proveedor') }}">Registrar compra</a>
+      <a href="{{ url_for('listar_compras_proveedor') }}">Compras a proveedores</a>
+      <a href="{{ url_for('modulo_egresos') }}">{{ 'Resumen de egresos' if current_user.es_administrador else 'Mis egresos y retiros' }}</a>
       <div class="menu-desplegable {{ 'activo' if request.endpoint in ['nuevo_producto_almacen','buscar_productos_almacen','imprimir_lista_precios'] }}">
         <a href="#" class="menu-boton" aria-haspopup="true" aria-expanded="false">
           <span class="icono">📦</span>Productos de Almacén

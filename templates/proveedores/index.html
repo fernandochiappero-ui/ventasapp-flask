@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}Proveedores{% endblock %}
+{% block contenido %}
+<h1>Proveedores</h1>
+<a href="{{ url_for('nuevo_proveedor') }}" class="boton verde">+ Agregar proveedor</a>
+<form method="GET" class="buscador"><input name="q" value="{{ q }}" placeholder="Buscar por nombre"><button class="boton secundario">Buscar</button></form>
+<div class="tarjeta">
+  {% for p in proveedores %}
+  <div class="renglon"><div><div class="principal">{{ p.nombre }}{% if not p.activo %} · Inactivo{% endif %}</div><div class="secundario">{{ p.cuit or '' }} {{ p.telefono or '' }} {{ p.email or '' }}</div></div>
+    {% if current_user.es_administrador %}<div class="acciones-producto"><a class="boton secundario" href="{{ url_for('modificar_proveedor', proveedor_id=p.id) }}">Editar</a>{% if p.activo %}<form method="POST" action="{{ url_for('desactivar_proveedor', proveedor_id=p.id) }}" data-confirmar-eliminacion data-titulo="¿Desactivar proveedor?" data-mensaje="Se conservarán sus compras y pagos." data-boton="Desactivar"><button class="boton peligro">Dar de baja</button></form>{% endif %}</div>{% endif %}
+  </div>
+  {% else %}<p class="vacio">No hay proveedores que coincidan.</p>{% endfor %}
+</div>
+{% endblock %}
