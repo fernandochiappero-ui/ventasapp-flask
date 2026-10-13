@@ -21,7 +21,7 @@
     <div class="valor cifra">${{ "%.2f"|format(total_ventas) }}</div>
   </div>
   <div class="tarjeta metrica verde">
-    <div class="etiqueta">Efectivo</div>
+    <div class="etiqueta">Efectivo disponible</div>
     <div class="valor cifra">${{ "%.2f"|format(total_efectivo) }}</div>
   </div>
   <div class="tarjeta metrica ladrillo">
@@ -40,6 +40,17 @@
     <div class="etiqueta">Deuda total (a hoy)</div>
     <div class="valor cifra ladrillo">${{ "%.2f"|format(deuda_total_actual) }}</div>
   </div>
+</div>
+
+<div class="tarjeta">
+  <h2>Cálculo de efectivo</h2>
+  <p>Ventas del período (${{ "%.2f"|format(total_ventas) }}) menos cuenta corriente (${{ "%.2f"|format(total_cuenta) }}), tarjeta/QR (${{ "%.2f"|format(total_tarjeta) }}), transferencias (${{ "%.2f"|format(total_transferencia) }}) y movimientos pagados en efectivo (${{ "%.2f"|format(egresos_efectivo) }}).</p>
+  <h3>Movimientos en efectivo por usuario</h3>
+  {% for usuario, datos in egresos_efectivo_por_usuario.items() %}
+    <div class="renglon"><div class="principal">{{ usuario }} · {{ datos.cantidad }} movimientos</div><div class="monto cifra ladrillo">${{ "%.2f"|format(datos.total) }}</div></div>
+  {% else %}
+    <p class="vacio">No hay movimientos pagados en efectivo en este período.</p>
+  {% endfor %}
 </div>
 
 <div class="tarjeta">

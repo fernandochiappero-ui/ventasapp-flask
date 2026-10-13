@@ -1106,6 +1106,12 @@ input[type="search"] {
   color: var(--tinta);
 }
 
+@media (max-width: 859px) {
+  html, body, .app, .contenido-principal {
+    background: #dceee7;
+  }
+}
+
 .buscador-fila {
   align-items: stretch;
 }
