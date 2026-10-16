@@ -3,6 +3,9 @@
 {% block contenido %}
 <h1>Resumen de egresos</h1>
 
+<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver"
+   onclick="if (window.history.length > 1) { window.history.back(); return false; }">← Volver</a>
+
 <form method="GET" class="rango-fechas">
   <div><label for="desde">Desde</label><input id="desde" type="date" name="desde" value="{{ desde.isoformat() }}"></div>
   <div><label for="hasta">Hasta</label><input id="hasta" type="date" name="hasta" value="{{ hasta.isoformat() }}"></div>
@@ -30,7 +33,10 @@
   {% for grupo in egresos_por_usuario %}
     <h3>{{ grupo.usuario }}</h3>
     {% for e in grupo.egresos %}
-    <div class="renglon"><div><div class="principal">{{ e.concepto }} · {{ 'Retiro' if e.categoria == 'retiro' else 'Gasto' }}</div><div class="secundario">{{ e.fecha.strftime('%d/%m/%Y %H:%M') }} · {{ e.forma_pago }}{% if e.modificado %} · Modificado {{ e.modificado.strftime('%d/%m/%Y %H:%M') }}{% endif %}</div></div><div class="acciones-producto"><div class="monto cifra ladrillo">${{ '%.2f'|format(e.monto) }}</div><a class="boton secundario" href="{{ url_for('editar_egreso', egreso_id=e.id) }}">Editar</a></div></div>
+    <div class="renglon"><div><div class="principal">{{ e.concepto }} · {{ 'Retiro' if e.categoria == 'retiro' else 'Gasto' }}</div><div class="secundario">{{ e.fecha.strftime('%d/%m/%Y %H:%M') }} · {{ e.forma_pago }}{% if e.modificado %} · Modificado {{ e.modificado.strftime('%d/%m/%Y %H:%M') }}{% endif %}</div></div><div class="acciones-producto"><div class="monto cifra ladrillo">${{ '%.2f'|format(e.monto) }}</div><a class="boton secundario" href="{{ url_for('editar_egreso', egreso_id=e.id) }}">Editar</a><form method="POST" action="{{ url_for('eliminar_egreso', egreso_id=e.id) }}" data-confirmar-eliminacion data-titulo="Eliminar egreso" data-mensaje="Se quitará este egreso del resumen y se guardará el cambio en la auditoría." data-boton="Eliminar">
+      <input type="hidden" name="desde" value="{{ desde.isoformat() }}"><input type="hidden" name="hasta" value="{{ hasta.isoformat() }}"><input type="hidden" name="usuario_id" value="{{ vendedor_id or '' }}"><input type="hidden" name="categoria" value="{{ categoria_filtro }}"><input type="hidden" name="forma_pago" value="{{ forma_filtro }}"><input type="hidden" name="orden" value="{{ orden }}">
+      <button class="boton peligro" type="submit">Eliminar</button>
+    </form></div></div>
     {% endfor %}
   {% else %}<p class="vacio">No hay movimientos cargados por los usuarios con estos filtros.</p>{% endfor %}
 </div>

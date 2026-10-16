@@ -487,6 +487,7 @@ def create_app():
         q = Egreso.query.filter(
             Egreso.fecha >= datetime.combine(desde, datetime.min.time()),
             Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()),
+            Egreso.estado == "activo",
             Egreso.categoria.in_(["retiro", "gasto"]),
             Egreso.usuario_id.is_not(None),
             Egreso.legacy_retiro_id.is_(None),
@@ -578,6 +579,44 @@ def create_app():
                 return redirect(url_for("modulo_egresos"))
         return render_template("egresos/editar.html", egreso=egreso)
 
+    @app.route("/egresos/<int:egreso_id>/eliminar", methods=["POST"])
+    @administrador_requerido
+    def eliminar_egreso(egreso_id):
+        egreso = db.get_or_404(Egreso, egreso_id)
+        es_manual_de_usuario = (
+            egreso.usuario_id is not None
+            and egreso.categoria in {"retiro", "gasto"}
+            and egreso.legacy_retiro_id is None
+            and egreso.legacy_pago_proveedor_id is None
+            and egreso.pago_compra_id is None
+        )
+        if egreso.estado != "activo" or not es_manual_de_usuario:
+            flash("Solo se pueden eliminar egresos activos cargados por un usuario.", "error")
+        else:
+            anterior = {
+                "fecha": egreso.fecha.isoformat(), "monto": str(egreso.monto),
+                "concepto": egreso.concepto, "categoria": egreso.categoria,
+                "forma_pago": egreso.forma_pago,
+                "observaciones": egreso.observaciones, "estado": egreso.estado,
+            }
+            egreso.estado = "anulado"
+            egreso.modificado = datetime.now(ZONA_HORARIA).replace(tzinfo=None)
+            egreso.modificado_por_id = current_user.id
+            nuevos = {**anterior, "estado": "anulado"}
+            db.session.add(AuditoriaEgreso(
+                egreso=egreso, usuario_id=current_user.id,
+                anteriores=anterior, nuevos=nuevos,
+            ))
+            db.session.commit()
+            flash("Egreso eliminado del resumen; quedó registrada la auditoría.", "success")
+
+        filtros = {
+            clave: request.form.get(clave)
+            for clave in ("desde", "hasta", "usuario_id", "categoria", "forma_pago", "orden")
+            if request.form.get(clave)
+        }
+        return redirect(url_for("modulo_egresos", **filtros))
+
     @app.route("/egresos/reporte.pdf")
     @administrador_requerido
     def egresos_pdf():
@@ -593,6 +632,7 @@ def create_app():
         q = Egreso.query.filter(
             Egreso.fecha >= datetime.combine(desde, datetime.min.time()),
             Egreso.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()),
+            Egreso.estado == "activo",
             Egreso.categoria.in_(["retiro", "gasto"]),
             Egreso.usuario_id.is_not(None),
             Egreso.legacy_retiro_id.is_(None),
@@ -1639,6 +1679,7 @@ def create_app():
         retiros_hoy = Egreso.query.filter(
             Egreso.usuario_id == current_user.id,
             Egreso.categoria == "retiro",
+            Egreso.estado == "activo",
             Egreso.fecha >= inicio,
             Egreso.fecha < fin,
         ).order_by(Egreso.fecha.desc(), Egreso.id.desc()).all()
@@ -1998,6 +2039,7 @@ def create_app():
         movimientos_efectivo = Egreso.query.filter(
             Egreso.fecha >= inicio_periodo,
             Egreso.fecha < fin_periodo,
+            Egreso.estado == "activo",
             Egreso.categoria.in_(["retiro", "gasto"]),
             Egreso.forma_pago == "efectivo",
             Egreso.usuario_id.is_not(None),
