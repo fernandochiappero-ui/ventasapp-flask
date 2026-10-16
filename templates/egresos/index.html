@@ -6,7 +6,7 @@
 <a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver"
    onclick="if (window.history.length > 1) { window.history.back(); return false; }">← Volver</a>
 
-<form method="GET" class="rango-fechas rango-egresos">
+<form method="GET" class="rango-fechas rango-egresos tarjeta">
   <div><label for="desde">Desde</label><input id="desde" type="date" name="desde" value="{{ desde.isoformat() }}"></div>
   <div><label for="hasta">Hasta</label><input id="hasta" type="date" name="hasta" value="{{ hasta.isoformat() }}"></div>
   <div><label for="usuario_id">Usuario</label><select id="usuario_id" name="usuario_id"><option value="">Todos</option>{% for u in usuarios %}<option value="{{ u.id }}" {{ 'selected' if vendedor_id == u.id }}>{{ u.username }}</option>{% endfor %}</select></div>
