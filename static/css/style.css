@@ -544,6 +544,12 @@ table.reporte td.num, table.reporte th.num { text-align: right; }
 }
 .rango-fechas > div { flex: 1; min-width: 130px; }
 .rango-fechas label { margin-top: 0; }
+.rango-egresos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+.rango-egresos > div { width: 100%; min-width: 0; }
 .acciones-filtros-egresos {
   display: flex;
   flex: 0 0 100%;
