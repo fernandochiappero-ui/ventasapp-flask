@@ -546,10 +546,19 @@ table.reporte td.num, table.reporte th.num { text-align: right; }
 .rango-fechas label { margin-top: 0; }
 .rango-egresos {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
+  column-gap: 12px;
+  row-gap: 8px;
 }
 .rango-egresos > div { width: 100%; min-width: 0; }
+.rango-egresos > div:nth-child(1) { grid-column: 1; grid-row: 1; }
+.rango-egresos > div:nth-child(2) { grid-column: 1; grid-row: 2; }
+.rango-egresos > div:nth-child(3) { grid-column: 2; grid-row: 1; }
+.rango-egresos > div:nth-child(4) { grid-column: 2; grid-row: 2; }
+.rango-egresos > div:nth-child(5) { grid-column: 3; grid-row: 1; }
+.rango-egresos > div:nth-child(6) { grid-column: 3; grid-row: 2; }
+.rango-egresos .acciones-filtros-egresos { grid-column: 1 / -1; grid-row: 3; }
 .acciones-filtros-egresos {
   display: flex;
   flex: 0 0 100%;
@@ -957,6 +966,14 @@ table.reporte th, table.reporte td { border-color: #c5d0da; padding: 7px 8px; }
 @media (max-width: 650px) {
   .acciones-filtros-egresos { flex-basis: 100%; justify-content: stretch; }
   .acciones-filtros-egresos .boton { flex: 1; }
+  .rango-egresos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rango-egresos > div:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .rango-egresos > div:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .rango-egresos > div:nth-child(3) { grid-column: 2; grid-row: 1; }
+  .rango-egresos > div:nth-child(4) { grid-column: 2; grid-row: 2; }
+  .rango-egresos > div:nth-child(5) { grid-column: 1; grid-row: 3; }
+  .rango-egresos > div:nth-child(6) { grid-column: 2; grid-row: 3; }
+  .rango-egresos .acciones-filtros-egresos { grid-column: 1 / -1; grid-row: 4; }
 }
 
 @media (min-width: 860px) {
