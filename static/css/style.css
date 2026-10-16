@@ -546,12 +546,14 @@ table.reporte td.num, table.reporte th.num { text-align: right; }
 .rango-fechas label { margin-top: 0; }
 .acciones-filtros-egresos {
   display: flex;
-  flex: 1 1 260px;
+  flex: 0 0 100%;
+  width: 100%;
+  box-sizing: border-box;
   gap: 8px;
-  align-items: end;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: flex-start;
 }
-.acciones-filtros-egresos .boton { margin: 0; white-space: nowrap; }
+.acciones-filtros-egresos .boton { flex: 0 1 190px; margin: 0; white-space: nowrap; }
 
 .vacio {
   text-align: center;
