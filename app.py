@@ -1033,7 +1033,10 @@ def create_app():
         ).first_or_404()
 
         if request.method == "POST":
-            codigo = request.form.get("codigo", "").strip().upper() or None
+            codigo_texto = request.form.get("codigo", "").strip()
+            if not producto.codigo and codigo_texto.casefold() in {"none", "null"}:
+                codigo_texto = ""
+            codigo = codigo_texto.upper() or None
             nombre = request.form.get("nombre", "").strip()
             categoria = request.form.get("categoria", "").strip()
             descripcion = request.form.get("descripcion", "").strip()
@@ -1283,7 +1286,10 @@ def create_app():
         ).first_or_404()
 
         if request.method == "POST":
-            codigo = request.form.get("codigo", "").strip().upper() or None
+            codigo_texto = request.form.get("codigo", "").strip()
+            if not producto.codigo and codigo_texto.casefold() in {"none", "null"}:
+                codigo_texto = ""
+            codigo = codigo_texto.upper() or None
             nombre = request.form.get("nombre", "").strip()
             categoria = request.form.get("categoria", "").strip()
             descripcion = request.form.get("descripcion", "").strip()

@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% set editando = producto is defined and producto %}
+{% set codigo_form = request.form.get('codigo', (producto.codigo or '') if editando else '') %}
+{% if editando and not producto.codigo and codigo_form|lower in ['none', 'null'] %}{% set codigo_form = '' %}{% endif %}
 {% block titulo %}{{ 'Editar producto' if editando else 'Agregar producto' }}{% endblock %}
 {% block contenido %}
 <h1>{{ 'Editar producto' if editando else 'Agregar producto al almacén' }}</h1>
@@ -13,7 +15,7 @@
 <form method="POST" class="tarjeta formulario-producto">
   <label for="codigo">Código</label>
   <input type="text" id="codigo" name="codigo" maxlength="40"
-         value="{{ request.form.get('codigo', producto.codigo if editando else '') }}" placeholder="Código de barras o interno">
+         value="{{ codigo_form }}" placeholder="Código de barras o interno">
 
   <label for="nombre">Producto *</label>
   <input type="text" id="nombre" name="nombre" maxlength="150"
