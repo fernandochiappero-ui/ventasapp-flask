@@ -2,11 +2,12 @@
 {% block titulo %}Cuenta de {{ cliente.nombre }}{% endblock %}
 {% block contenido %}
 <h1>{{ cliente.nombre }}</h1>
+<a href="{{ url_for('cuenta_corriente_pdf', cliente_id=cliente.id) }}" class="boton verde boton-volver">Generar PDF</a>
 <a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
 
-<div class="tarjeta metrica {{ 'ladrillo' if cliente.saldo > 0 else 'verde' }}">
-  <div class="etiqueta">Saldo actual</div>
-  <div class="valor cifra">${{ "%.2f"|format(cliente.saldo) }}</div>
+<div class="tarjeta metrica {{ 'ladrillo' if saldo_historico > 0 else 'verde' }}">
+  <div class="etiqueta">Saldo al {{ fecha_corte.strftime('%d/%m/%Y') }}</div>
+  <div class="valor cifra">${{ "%.2f"|format(saldo_historico) }}</div>
 </div>
 
 <div class="tarjeta">
@@ -26,7 +27,7 @@
 </div>
 
 <div class="tarjeta">
-  <h2>Historial de movimientos</h2>
+  <h2>Historial de movimientos hasta {{ fecha_corte.strftime('%d/%m/%Y') }}</h2>
   {% if filas %}
     {% for f in filas %}
       <div class="renglon">

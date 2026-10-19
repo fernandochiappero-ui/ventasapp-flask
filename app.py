@@ -42,6 +42,11 @@ def normalizar(texto):
     sin_tildes = "".join(c for c in texto if unicodedata.category(c) != "Mn")
     return sin_tildes.casefold()
 
+def texto_pdf(texto):
+    """Convierte texto variable a caracteres compatibles con Helvetica en FPDF."""
+    normalizado = unicodedata.normalize("NFKD", str(texto or ""))
+    return normalizado.encode("ascii", "ignore").decode("ascii")
+
 def resolver_precio(costo, porcentaje, precio_texto):
     """Devuelve (porcentaje, precio_venta, error)."""
     cien = Decimal("100")
@@ -223,6 +228,22 @@ def create_app():
             return valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         except (InvalidOperation, ValueError):
             return None
+
+    def historial_cuenta_corriente(cliente_id):
+        fecha_corte = hoy_argentina()
+        movimientos = MovimientoCC.query.filter(
+            MovimientoCC.cliente_id == cliente_id,
+            MovimientoCC.fecha <= fecha_corte,
+        ).order_by(
+            MovimientoCC.fecha, MovimientoCC.creado, MovimientoCC.id
+        ).all()
+        saldo = Decimal("0.00")
+        filas = []
+        for movimiento in movimientos:
+            importe = Decimal(str(movimiento.monto))
+            saldo += importe if movimiento.tipo == "venta" else -importe
+            filas.append({"mov": movimiento, "saldo": saldo})
+        return fecha_corte, filas, saldo
 
     @app.route("/proveedores")
     @login_required
@@ -1840,18 +1861,62 @@ def create_app():
     @administrador_requerido
     def cuenta_corriente_detalle(cliente_id):
         cliente = db.get_or_404(Cliente, cliente_id)
-        movimientos = sorted(cliente.movimientos, key=lambda m: (m.fecha, m.creado))
+        fecha_corte, filas, saldo_historico = historial_cuenta_corriente(cliente.id)
 
         # Armamos el saldo "corrido" (como en un resumen bancario), para
         # que se vea cómo fue subiendo o bajando la deuda con cada movimiento.
-        saldo_corrido = 0.0
-        filas = []
-        for m in movimientos:
-            saldo_corrido += m.monto if m.tipo == "venta" else -m.monto
-            filas.append({"mov": m, "saldo": round(saldo_corrido, 2)})
         filas.reverse()  # mostramos lo más reciente primero
 
-        return render_template("cuenta/detalle.html", cliente=cliente, filas=filas)
+        return render_template(
+            "cuenta/detalle.html", cliente=cliente, filas=filas,
+            fecha_corte=fecha_corte, saldo_historico=saldo_historico,
+        )
+
+    @app.route("/cuenta-corriente/<int:cliente_id>/pdf")
+    @administrador_requerido
+    def cuenta_corriente_pdf(cliente_id):
+        cliente = db.get_or_404(Cliente, cliente_id)
+        fecha_corte, filas, saldo_historico = historial_cuenta_corriente(cliente.id)
+        pdf = FPDF(orientation="L", format="A4")
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.cell(0, 10, "HISTORIAL DE CUENTA CORRIENTE", ln=1)
+        pdf.set_font("Helvetica", "", 11)
+        pdf.cell(0, 8, f"Cliente: {texto_pdf(cliente.nombre)}", ln=1)
+        pdf.cell(0, 8, f"Movimientos hasta {fecha_corte:%d/%m/%Y} | Saldo: ${saldo_historico:.2f}", ln=1)
+        pdf.ln(3)
+
+        columnas = [(24, "Fecha"), (16, "Hora"), (28, "Movimiento"),
+                    (28, "Usuario"), (112, "Descripcion"), (27, "Importe"), (32, "Saldo")]
+        pdf.set_font("Helvetica", "B", 9)
+        for ancho, titulo in columnas:
+            pdf.cell(ancho, 8, titulo, border=1)
+        pdf.ln()
+        pdf.set_font("Helvetica", "", 9)
+        for fila in filas:
+            movimiento = fila["mov"]
+            valores = [
+                movimiento.fecha.strftime("%d/%m/%Y"),
+                movimiento.creado.strftime("%H:%M"),
+                "Venta" if movimiento.tipo == "venta" else "Pago",
+                movimiento.usuario.username if movimiento.usuario else "Sistema",
+                movimiento.descripcion or "",
+                f"${movimiento.monto:.2f}",
+                f"${fila['saldo']:.2f}",
+            ]
+            for (ancho, _), valor in zip(columnas, valores):
+                pdf.cell(ancho, 7, texto_pdf(str(valor))[:65], border=1)
+            pdf.ln()
+
+        contenido = pdf.output(dest="S")
+        if isinstance(contenido, str):
+            contenido = contenido.encode("latin-1")
+        nombre = f"cuenta-corriente-cliente-{cliente.id}-{fecha_corte.isoformat()}.pdf"
+        return send_file(
+            BytesIO(bytes(contenido)), mimetype="application/pdf",
+            as_attachment=True, download_name=nombre,
+        )
 
     @app.route("/cuenta-corriente/<int:cliente_id>/pago", methods=["POST"])
     @login_required

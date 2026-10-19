@@ -43,6 +43,7 @@
           <span class="etiqueta-pill">Al día</span>
         {% endif %}
         <div class="acciones-renglon">
+          <a href="{{ url_for('cuenta_corriente_detalle', cliente_id=c.id) }}" class="boton secundario">Historial CC</a>
           <a href="{{ url_for('editar_cliente', cliente_id=c.id) }}" class="boton secundario">Editar</a>
               <form method="POST" action="{{ url_for('eliminar_cliente', cliente_id=c.id) }}"
                 data-confirmar-eliminacion data-cliente="{{ c.nombre }}">
