@@ -2,7 +2,8 @@
 {% block titulo %}Cuenta corriente{% endblock %}
 {% block contenido %}
 <h1>Cuenta corriente</h1>
-<a href="{{ url_for('dashboard') }}" class="boton secundario boton-volver">← Inicio</a>
+<a href="{{ url_for('listar_clientes') }}" class="boton secundario boton-volver"
+   onclick="if (window.history.length > 1) { window.history.back(); return false; }">← Volver</a>
 <p class="subtitulo">Saldo de cada cliente (lo que te debe).</p>
 
 <div class="tarjeta metrica ladrillo">
