@@ -3,8 +3,7 @@
 {% block contenido %}
 <h1>{{ cliente.nombre }}</h1>
 <a href="{{ url_for('cuenta_corriente_pdf', cliente_id=cliente.id) }}" class="boton verde boton-volver">Generar PDF</a>
-<a href="{{ url_for('listar_clientes') }}" class="boton secundario boton-volver"
-   onclick="if (window.history.length > 1) { window.history.back(); return false; }">← Volver</a>
+<a href="{{ url_for('listar_clientes') }}" class="boton secundario boton-volver">← Volver</a>
 
 <div class="tarjeta metrica {{ 'ladrillo' if saldo_historico > 0 else 'verde' }}">
   <div class="etiqueta">Saldo al {{ fecha_corte.strftime('%d/%m/%Y') }}</div>
